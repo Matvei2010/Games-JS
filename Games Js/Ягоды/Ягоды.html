@@ -2,14 +2,15 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>🍍 FRUIT FIESTA — Сочная аркада</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>🍍 FRUIT FIESTA — Мир фруктов и овощей!</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -19,75 +20,77 @@
             justify-content: center;
             align-items: center;
             font-family: 'Segoe UI', 'Poppins', 'Arial', sans-serif;
-            /* Убираем overflow: hidden, чтобы разрешить прокрутку */
             overflow-y: auto;
-            padding: 20px;
+            padding: 10px;
         }
 
         .game-wrapper {
             background: radial-gradient(circle at 30% 20%, #ffd89b, #c7e9fb);
-            border-radius: 64px;
-            padding: 20px;
-            box-shadow: 0 30px 40px rgba(0,0,0,0.5), inset 0 1px 4px rgba(255,255,200,0.8);
+            border-radius: 32px;
+            padding: 15px;
+            box-shadow: 0 20px 30px rgba(0,0,0,0.5), inset 0 1px 4px rgba(255,255,200,0.8);
             transition: 0.3s;
             max-width: 100%;
-            width: fit-content;
+            width: 100%;
             margin: auto;
         }
 
         canvas {
             display: block;
             margin: 0 auto;
-            border-radius: 48px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            border-radius: 32px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
             cursor: pointer;
             background: #ffefcf;
             width: 100%;
             height: auto;
+            touch-action: none;
         }
 
         .ui-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 20px;
-            gap: 20px;
+            margin-top: 15px;
+            gap: 12px;
             flex-wrap: wrap;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.6);
             backdrop-filter: blur(12px);
-            border-radius: 80px;
-            padding: 12px 28px;
+            border-radius: 60px;
+            padding: 10px 20px;
             transition: all 0.3s;
         }
 
         .score-box, .multiplier-box, .best-box {
             background: #f9e7b3;
-            padding: 6px 20px;
-            border-radius: 60px;
+            padding: 4px 16px;
+            border-radius: 40px;
             font-weight: bold;
             color: #c25d2e;
             box-shadow: inset 0 1px 4px #fff3bf, 0 4px 8px rgba(0,0,0,0.2);
+            font-size: 14px;
         }
 
         .score-box span, .multiplier-box span, .best-box span {
-            font-size: 28px;
+            font-size: 22px;
             font-weight: 800;
             color: #ff6633;
-            margin-left: 8px;
+            margin-left: 6px;
         }
 
         button {
             background: linear-gradient(145deg, #ffaa55, #ff8844);
             border: none;
-            padding: 8px 28px;
-            border-radius: 60px;
+            padding: 6px 20px;
+            border-radius: 40px;
             font-weight: bold;
-            font-size: 18px;
+            font-size: 16px;
             cursor: pointer;
             transition: 0.2s;
             color: white;
             text-shadow: 0 1px 2px black;
-            box-shadow: 0 5px 0 #aa5533;
+            box-shadow: 0 4px 0 #aa5533;
+            touch-action: manipulation;
         }
 
         button:active {
@@ -100,7 +103,7 @@
             top: 30%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 48px;
+            font-size: 40px;
             font-weight: bold;
             color: #ffdd44;
             text-shadow: 0 0 20px #ff6600;
@@ -117,47 +120,176 @@
             100% { transform: scale(1); opacity: 1; }
         }
 
-        /* Мобильный режим */
-        body.mobile-mode .game-wrapper {
-            padding: 10px;
+        .upgrades-panel {
+            margin-top: 15px;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(12px);
+            border-radius: 30px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
+        .upgrades-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffd966;
+            text-align: center;
+        }
+
+        .upgrades-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+        }
+
+        .upgrade-card {
+            background: rgba(0,0,0,0.7);
+            border-radius: 28px;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #ffaa66;
+            touch-action: manipulation;
+        }
+
+        .upgrade-card:active {
+            transform: scale(0.98);
+        }
+
+        .upgrade-info {
+            flex: 1;
+        }
+
+        .upgrade-name {
+            font-weight: bold;
+            color: #ffaa66;
+            font-size: 14px;
+        }
+
+        .upgrade-desc {
+            font-size: 10px;
+            color: #ccc;
+        }
+
+        .upgrade-cost {
+            background: #ff8844;
+            padding: 3px 10px;
+            border-radius: 40px;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .statistics {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 10px;
+            font-size: 11px;
+            color: #eee;
+            background: rgba(0,0,0,0.5);
+            border-radius: 40px;
+            padding: 6px;
+            flex-wrap: wrap;
+        }
+
+        .extra-panel {
+            margin-top: 10px;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+            border-radius: 30px;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .daily-bonus, .pet-status, .event-timer, .mode-selector {
+            background: rgba(0,0,0,0.6);
+            border-radius: 30px;
+            padding: 5px 12px;
+            font-size: 12px;
+            color: #ffdd99;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 8px;
+        }
+
+        .mode-btn {
+            background: #3a2a1e;
+            padding: 4px 12px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .mode-btn.active {
+            background: #ff8844;
+            color: white;
+            box-shadow: 0 0 8px #ffaa44;
+        }
+
+        .timer-display {
+            background: #000000aa;
+            border-radius: 40px;
+            padding: 4px 12px;
+            font-weight: bold;
+            color: #ffaa66;
+        }
+
+        body.mobile-mode {
+            padding: 5px;
+        }
+        body.mobile-mode .game-wrapper {
+            padding: 10px;
+            border-radius: 24px;
+        }
         body.mobile-mode .ui-bar {
             flex-direction: column;
             border-radius: 40px;
-            padding: 15px 20px;
-            gap: 12px;
+            padding: 12px 16px;
+            gap: 10px;
         }
-
         body.mobile-mode .score-box,
         body.mobile-mode .multiplier-box,
         body.mobile-mode .best-box {
             width: 100%;
             text-align: center;
-            padding: 10px;
+            padding: 6px;
+            font-size: 16px;
         }
-
         body.mobile-mode .score-box span,
         body.mobile-mode .multiplier-box span,
         body.mobile-mode .best-box span {
-            font-size: 32px;
+            font-size: 26px;
         }
-
         body.mobile-mode button {
-            padding: 12px 20px;
-            font-size: 20px;
+            padding: 10px 16px;
+            font-size: 18px;
             width: 100%;
         }
-
         body.mobile-mode canvas {
-            width: 100%;
-            height: auto;
-            border-radius: 32px;
+            border-radius: 24px;
         }
-
         body.mobile-mode .combo {
-            font-size: 36px;
+            font-size: 32px;
             top: 25%;
+        }
+        body.mobile-mode .upgrades-grid {
+            grid-template-columns: 1fr;
+        }
+        body.mobile-mode .extra-panel {
+            flex-direction: column;
+            align-items: stretch;
+            text-align: center;
         }
     </style>
 </head>
@@ -169,11 +301,33 @@
             <div class="score-box">🍍 СЧЁТ: <span id="scoreValue">0</span></div>
             <div class="multiplier-box">✨ МНОЖИТЕЛЬ: <span id="multiplierValue">1</span>x</div>
             <div class="best-box">🏆 РЕКОРД: <span id="bestValue">0</span></div>
-            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                <button id="mobileModeBtn">📱 Мобильный режим</button>
-                <button id="upgradeBtn">⚡ УЛУЧШЕНИЕ (50💰)</button>
-                <button id="resetBtn">🔄 НОВАЯ ИГРА</button>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; width: 100%; justify-content: center;">
+                <button id="mobileModeBtn" style="flex: 1;">📱 Мобильный режим</button>
+                <button id="resetBtn" style="flex: 1;">🔄 НОВАЯ ИГРА</button>
             </div>
+        </div>
+
+        <div class="extra-panel" id="extraPanel">
+            <div class="daily-bonus">🎁 Ежедневный бонус: <span id="dailyBonusText">доступен</span> <button id="claimDailyBtn" style="padding: 2px 12px; font-size: 12px;">Забрать</button></div>
+            <div class="pet-status">🐕 Питомец: <span id="petLevel">1</span> ур. (собирает каждый 5-й)</div>
+            <div class="event-timer">⚡ Событие: <span id="eventText">нет</span></div>
+            <div class="mode-selector">
+                <span>🎮 Режим:</span>
+                <div id="modeNormalBtn" class="mode-btn active">🍍 Обычный</div>
+                <div id="ModeSpeedBtn" class="mode-btn">⚡ Быстрый сбор</div>
+                <div id="ModeBombBtn" class="mode-btn">💣 Не слови бомбу</div>
+            </div>
+            <div id="timerDisplay" class="timer-display" style="display: none;">⏱️ 0с</div>
+        </div>
+
+        <div class="upgrades-panel">
+            <div class="upgrades-title">⚡ МАГАЗИН УЛУЧШЕНИЙ ⚡</div>
+            <div class="upgrades-grid" id="upgradesGrid"></div>
+        </div>
+        <div class="statistics" id="statPanel">
+            📊 Всего собрано: <span id="totalCollected">0</span> &nbsp;|&nbsp;
+            🔥 Макс. комбо: <span id="maxCombo">0</span> &nbsp;|&nbsp;
+            🌟 Достижений: <span id="achievementCount">0</span>
         </div>
     </div>
     <div class="combo" id="comboText">🔥 КОМБО!</div>
@@ -181,7 +335,6 @@
 
 <script>
     (function(){
-        // ---------- СОЧНАЯ АРКАДА FRUIT FIESTA ----------
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const W = canvas.width = 1000;
@@ -191,151 +344,307 @@
         let score = 0;
         let bestScore = localStorage.getItem('fruitBest') ? parseInt(localStorage.getItem('fruitBest')) : 0;
         let multiplier = 1;
-        let upgradeLevel = 1;      // увеличивает множитель и стоимость
-        let clickPower = 1;         // базовые очки за клик (1 * множитель)
+        let clickPower = 1;
+        let spawnSpeedBonus = 0;
+        let rareFruitChance = 0.1;   // шанс золотого фрукта
+        let comboBonusMultiplier = 1;
+        let totalCollected = 0;
+        let maxCombo = 0;
         
-        // Список фруктов
-        let fruits = [];
-        let particles = [];
-        let floatingNumbers = [];
+        // ----- ДОПОЛНИТЕЛЬНЫЕ СИСТЕМЫ -----
+        let gameMode = 'normal';
+        let speedModeTimer = 0;
+        let speedModeActive = false;
+        let speedModeReward = 0;
         
-        // Таймер комбо
-        let combo = 0;
-        let comboTimeout = null;
+        let lastDailyClaim = localStorage.getItem('fruitDailyClaim') ? parseInt(localStorage.getItem('fruitDailyClaim')) : 0;
+        let dailyStreak = localStorage.getItem('fruitDailyStreak') ? parseInt(localStorage.getItem('fruitDailyStreak')) : 0;
+        let petLevel = localStorage.getItem('fruitPetLevel') ? parseInt(localStorage.getItem('fruitPetLevel')) : 1;
+        let petCollectCounter = 0;
+        let activeEvent = null;
+        let eventEndTime = 0;
+        let rareFruitsCollected = localStorage.getItem('fruitRareCount') ? parseInt(localStorage.getItem('fruitRareCount')) : 0;
+        let bombPenaltyCounter = 0;
         
-        // Визуальный эффект
-        let screenShake = 0;
+        // ----- НОВЫЕ ВИДЫ ПРЕДМЕТОВ -----
+        const itemsCatalog = [
+            { icon: "🍊", baseValue: 1, weight: 15, name: "Апельсин" },
+            { icon: "🍉", baseValue: 1, weight: 15, name: "Арбуз" },
+            { icon: "🍍", baseValue: 1, weight: 15, name: "Ананас" },
+            { icon: "🍒", baseValue: 2, weight: 12, name: "Вишня" },
+            { icon: "🍓", baseValue: 3, weight: 10, name: "Клубника" },
+            { icon: "🫐", baseValue: 3, weight: 10, name: "Голубика" },
+            { icon: "🍇", baseValue: 4, weight: 8, name: "Виноград" },
+            { icon: "🍎", baseValue: 2, weight: 12, name: "Яблоко" },
+            { icon: "🍐", baseValue: 2, weight: 12, name: "Груша" },
+            { icon: "🥕", baseValue: 3, weight: 10, name: "Морковь" },
+            { icon: "🍅", baseValue: 2, weight: 12, name: "Помидор" },
+            { icon: "🍄", baseValue: 5, weight: 5, name: "Гриб" },
+            { icon: "🌶️", baseValue: 6, weight: 4, name: "Перец чили" }
+        ];
         
-        // ---------- ФУНКЦИИ СОХРАНЕНИЯ ----------
+        // ----- УЛУЧШЕНИЯ -----
+        let upgrades = [
+            { id: 'clickPower', name: '🍬 Сила клика', desc: '+0.5 к базовому доходу', baseCost: 50, costMultiplier: 1.6, level: 1, maxLevel: 2000, effect: (lvl) => 0.5 * (lvl-1) },
+            { id: 'multiplier', name: '✨ Множитель', desc: '+0.3 к множителю', baseCost: 80, costMultiplier: 1.7, level: 1, maxLevel: 2000, effect: (lvl) => 0.3 * (lvl-1) },
+            { id: 'spawnSpeed', name: '⏩ Быстрый спавн', desc: '-0.05 сек задержки', baseCost: 120, costMultiplier: 1.8, level: 1, maxLevel: 1500, effect: (lvl) => -0.05 * (lvl-1) },
+            { id: 'rareFruit', name: '🌟 Редкие фрукты', desc: '+5% шанс золотого', baseCost: 150, costMultiplier: 1.9, level: 1, maxLevel: 1000, effect: (lvl) => 0.05 * (lvl-1) },
+            { id: 'comboBonus', name: '⚡ Комбо-бонус', desc: '+10% к множителю комбо', baseCost: 200, costMultiplier: 2.0, level: 1, maxLevel: 1000, effect: (lvl) => 0.1 * (lvl-1) },
+            { id: 'petUpgrade', name: '🐕 Улучшение питомца', desc: '+1 уровень питомца', baseCost: 300, costMultiplier: 1.9, level: 1, maxLevel: 1000, effect: (lvl) => lvl, special: true },
+            { id: 'eventBoost', name: '⏰ Удлинение события', desc: '+5 сек к событиям', baseCost: 250, costMultiplier: 1.8, level: 1, maxLevel: 800, effect: (lvl) => lvl * 5, special: true }
+        ];
+        
+        // Достижения
+        const achievementList = [
+            { id: 'first100', name: '🍬 Первая сотня', condition: () => totalCollected >= 100, reward: 50, claimed: false },
+            { id: 'first500', name: '💎 500 очков', condition: () => totalCollected >= 500, reward: 150, claimed: false },
+            { id: 'first1000', name: '👑 1000 очков', condition: () => totalCollected >= 1000, reward: 300, claimed: false },
+            { id: 'combo10', name: '🔥 Комбо x10', condition: () => maxCombo >= 10, reward: 100, claimed: false },
+            { id: 'combo20', name: '⚡ Комбо x20', condition: () => maxCombo >= 20, reward: 250, claimed: false },
+            { id: 'upgrade5', name: '🛠️ 5 улучшений', condition: () => upgrades.reduce((s,u)=>s+u.level-1,0) >= 5, reward: 200, claimed: false },
+            { id: 'pet5', name: '🐕 Друг человека', condition: () => petLevel >= 5, reward: 300, claimed: false },
+            { id: 'rare10', name: '✨ Коллекционер', condition: () => rareFruitsCollected >= 10, reward: 400, claimed: false },
+            { id: 'eventFirst', name: '⚡ Первое событие', condition: () => activeEvent !== null, reward: 100, claimed: false },
+            { id: 'speedClear', name: '⚡ Скоростной сбор', condition: () => speedModeReward > 0, reward: 200, claimed: false },
+            { id: 'bombSurvive', name: '💣 Бомбоустойчивый', condition: () => bombPenaltyCounter > 10, reward: 300, claimed: false }
+        ];
+        
+        // ----- ФУНКЦИИ СОХРАНЕНИЯ, ЗАГРУЗКИ -----
         function saveGame() {
             const saveData = {
-                score: score,
-                upgradeLevel: upgradeLevel,
-                multiplier: multiplier,
-                clickPower: clickPower,
-                bestScore: bestScore
+                score, totalCollected, bestScore,
+                upgrades: upgrades.map(u => ({ level: u.level })),
+                achievements: achievementList.map(a => ({ claimed: a.claimed })),
+                maxCombo, lastDailyClaim, dailyStreak, petLevel, rareFruitsCollected,
+                activeEvent, eventEndTime
             };
-            localStorage.setItem('fruitFiestaSave', JSON.stringify(saveData));
+            localStorage.setItem('fruitFiestaSaveV4', JSON.stringify(saveData));
+            localStorage.setItem('fruitBest', bestScore);
         }
         
         function loadGame() {
-            const saved = localStorage.getItem('fruitFiestaSave');
+            const saved = localStorage.getItem('fruitFiestaSaveV4');
             if (saved) {
                 try {
                     const data = JSON.parse(saved);
                     score = data.score || 0;
-                    upgradeLevel = data.upgradeLevel || 1;
-                    multiplier = data.multiplier || 1;
-                    clickPower = data.clickPower || 1;
+                    totalCollected = data.totalCollected || 0;
                     bestScore = data.bestScore || 0;
-                    if (bestScore > (localStorage.getItem('fruitBest') || 0)) {
-                        localStorage.setItem('fruitBest', bestScore);
+                    maxCombo = data.maxCombo || 0;
+                    lastDailyClaim = data.lastDailyClaim || 0;
+                    dailyStreak = data.dailyStreak || 0;
+                    petLevel = data.petLevel || 1;
+                    rareFruitsCollected = data.rareFruitsCollected || 0;
+                    activeEvent = data.activeEvent || null;
+                    eventEndTime = data.eventEndTime || 0;
+                    if (data.upgrades) {
+                        for (let i=0; i<upgrades.length; i++) {
+                            if (data.upgrades[i]) upgrades[i].level = data.upgrades[i].level || 1;
+                        }
                     }
-                } catch(e) { console.warn("Ошибка загрузки сохранения"); }
+                    if (data.achievements) {
+                        for (let i=0; i<achievementList.length; i++) {
+                            if (data.achievements[i]) achievementList[i].claimed = data.achievements[i].claimed;
+                        }
+                    }
+                } catch(e) { console.warn(e); }
             }
+            applyUpgrades();
             updateUI();
+            checkDailyBonusAvailability();
+            startEventIfNeeded();
         }
         
-        function resetGame(keepSave = false) {
-            score = 0;
-            multiplier = 1;
-            upgradeLevel = 1;
-            clickPower = 1;
-            combo = 0;
-            if (comboTimeout) clearTimeout(comboTimeout);
-            fruits = [];
-            for (let i = 0; i < 8; i++) spawnFruit();
-            updateUI();
-            document.getElementById('comboText').style.opacity = '0';
-            if (!keepSave) {
-                localStorage.removeItem('fruitFiestaSave');
-            } else {
+        function applyUpgrades() {
+            clickPower = 1 + upgrades.find(u=>u.id==='clickPower').effect(upgrades.find(u=>u.id==='clickPower').level);
+            multiplier = 1 + upgrades.find(u=>u.id==='multiplier').effect(upgrades.find(u=>u.id==='multiplier').level);
+            let spawnBonus = upgrades.find(u=>u.id==='spawnSpeed').effect(upgrades.find(u=>u.id==='spawnSpeed').level);
+            spawnDelay = Math.max(0.2, 0.6 + spawnBonus);
+            rareFruitChance = 0.1 + upgrades.find(u=>u.id==='rareFruit').effect(upgrades.find(u=>u.id==='rareFruit').level);
+            comboBonusMultiplier = 1 + upgrades.find(u=>u.id==='comboBonus').effect(upgrades.find(u=>u.id==='comboBonus').level);
+            let petUp = upgrades.find(u=>u.id==='petUpgrade');
+            petLevel = petUp ? petUp.level : 1;
+        }
+        
+        function getUpgradeCost(upgrade) {
+            if (upgrade.level >= upgrade.maxLevel) return Infinity;
+            return Math.floor(upgrade.baseCost * Math.pow(upgrade.costMultiplier, upgrade.level - 1));
+        }
+        
+        function buyUpgrade(upgradeId) {
+            const up = upgrades.find(u => u.id === upgradeId);
+            if (!up || up.level >= up.maxLevel) return false;
+            const cost = getUpgradeCost(up);
+            if (score >= cost) {
+                score -= cost;
+                up.level++;
+                applyUpgrades();
                 saveGame();
-            }
-        }
-        
-        // ---------- МОБИЛЬНЫЙ РЕЖИМ ----------
-        function toggleMobileMode() {
-            document.body.classList.toggle('mobile-mode');
-            const isMobile = document.body.classList.contains('mobile-mode');
-            localStorage.setItem('fruitMobileMode', isMobile ? 'true' : 'false');
-            const btn = document.getElementById('mobileModeBtn');
-            btn.textContent = isMobile ? '💻 Десктопный режим' : '📱 Мобильный режим';
-        }
-        
-        function loadMobileMode() {
-            const savedMode = localStorage.getItem('fruitMobileMode');
-            if (savedMode === 'true') {
-                document.body.classList.add('mobile-mode');
-                document.getElementById('mobileModeBtn').textContent = '💻 Десктопный режим';
+                updateUI();
+                renderUpgradesPanel();
+                burstParticles(W/2, H/2, "#ffaa88", 30);
+                floatingNumbers.push(new FloatingNumber(W/2, H/2-40, `⭐ ${up.name} +1`));
+                screenShake = 3;
+                return true;
             } else {
-                document.body.classList.remove('mobile-mode');
-                document.getElementById('mobileModeBtn').textContent = '📱 Мобильный режим';
+                floatingNumbers.push(new FloatingNumber(W/2, H/2-30, "💰 НЕ ХВАТАЕТ!"));
+                return false;
             }
         }
         
-        // Эффекты частиц
-        class Particle {
-            constructor(x, y, color, size = 6) {
-                this.x = x;
-                this.y = y;
-                this.vx = (Math.random() - 0.5) * 6;
-                this.vy = (Math.random() - 1.5) * 5 - 2;
-                this.life = 1.0;
-                this.color = color;
-                this.size = size;
+        // --- Ежедневный бонус ---
+        function checkDailyBonusAvailability() {
+            const now = Date.now();
+            const oneDay = 24 * 60 * 60 * 1000;
+            const canClaim = (now - lastDailyClaim) >= oneDay;
+            document.getElementById('dailyBonusText').innerText = canClaim ? "доступен" : `${Math.ceil((oneDay - (now - lastDailyClaim)) / (60*60*1000))} ч`;
+            return canClaim;
+        }
+        
+        function claimDailyBonus() {
+            if (!checkDailyBonusAvailability()) return;
+            const now = Date.now();
+            lastDailyClaim = now;
+            let bonus = 50 + dailyStreak * 10;
+            score += bonus;
+            totalCollected += bonus;
+            dailyStreak = (dailyStreak + 1) % 7;
+            updateUI();
+            saveGame();
+            floatingNumbers.push(new FloatingNumber(W/2, 100, `🎁 +${bonus} ежедневный!`));
+            burstParticles(W/2, 100, "#ffaa77", 40);
+            checkDailyBonusAvailability();
+        }
+        
+        // --- События ---
+        function startEventIfNeeded() {
+            if (activeEvent && eventEndTime > Date.now()) return;
+            if (Math.random() < 0.2 && !activeEvent) {
+                const eventTypes = ['double', 'speed', 'rare'];
+                const type = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+                let duration = 30 + (upgrades.find(u=>u.id==='eventBoost')?.effect(upgrades.find(u=>u.id==='eventBoost').level) || 0);
+                activeEvent = { type, endTime: Date.now() + duration * 1000, multiplier: type === 'double' ? 2 : 1 };
+                eventEndTime = activeEvent.endTime;
+                saveGame();
+                showFloatingMessage(`⚡ СОБЫТИЕ: ${type === 'double' ? 'УДВОЕНИЕ' : type === 'speed' ? 'БЫСТРЫЙ СПАВН' : 'РЕДКИЕ ФРУКТЫ'}!`, W/2, 80, "#ffaa44");
             }
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                this.vy += 0.2;
-                this.life -= 0.025;
-                return this.life > 0;
-            }
-            draw(ctx) {
-                ctx.globalAlpha = this.life;
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size * this.life, 0, Math.PI*2);
-                ctx.fill();
-                ctx.globalAlpha = 1;
+            updateEventDisplay();
+        }
+        
+        function updateEventDisplay() {
+            const eventDiv = document.getElementById('eventText');
+            if (activeEvent && activeEvent.endTime > Date.now()) {
+                let remaining = Math.ceil((activeEvent.endTime - Date.now()) / 1000);
+                let text = activeEvent.type === 'double' ? `x2 очки (${remaining}с)` : activeEvent.type === 'speed' ? `быстрый спавн (${remaining}с)` : `редкие (${remaining}с)`;
+                eventDiv.innerText = text;
+                if (activeEvent.type === 'speed') spawnDelay = Math.max(0.1, 0.6 + upgrades.find(u=>u.id==='spawnSpeed').effect(upgrades.find(u=>u.id==='spawnSpeed').level) * 0.8);
+                if (activeEvent.type === 'rare') rareFruitChance = Math.min(0.8, 0.1 + upgrades.find(u=>u.id==='rareFruit').effect(upgrades.find(u=>u.id==='rareFruit').level) + 0.3);
+                if (activeEvent.type === 'double') multiplierBonus = 2;
+            } else {
+                eventDiv.innerText = "нет";
+                activeEvent = null;
+                applyUpgrades();
+                multiplierBonus = 1;
+                rareFruitChance = 0.1 + upgrades.find(u=>u.id==='rareFruit').effect(upgrades.find(u=>u.id==='rareFruit').level);
+                spawnDelay = Math.max(0.2, 0.6 + upgrades.find(u=>u.id==='spawnSpeed').effect(upgrades.find(u=>u.id==='spawnSpeed').level));
             }
         }
         
-        class FloatingNumber {
-            constructor(x, y, value) {
-                this.x = x;
-                this.y = y;
-                this.value = value;
-                this.life = 1.0;
-            }
-            update() {
-                this.y -= 1.5;
-                this.life -= 0.02;
-                return this.life > 0;
-            }
-            draw(ctx) {
-                ctx.save();
-                ctx.globalAlpha = this.life;
-                ctx.font = `bold ${24 + (1-this.life)*10}px "Segoe UI"`;
-                ctx.fillStyle = `hsl(${45 + this.life*40}, 100%, 60%)`;
-                ctx.shadowBlur = 4;
-                ctx.fillText(`+${this.value}`, this.x, this.y);
-                ctx.restore();
+        let multiplierBonus = 1;
+        
+        // --- Питомец ---
+        function updatePet() {
+            petCollectCounter++;
+            if (petCollectCounter >= (6 - Math.floor(petLevel / 2))) {
+                petCollectCounter = 0;
+                if (fruits.length > 0) {
+                    let normalFruits = fruits.filter(f => !f.isBomb);
+                    if (normalFruits.length > 0) {
+                        let idx = fruits.indexOf(normalFruits[Math.floor(Math.random() * normalFruits.length)]);
+                        let fruit = fruits[idx];
+                        let gain = Math.floor(fruit.baseValue * clickPower * multiplier * multiplierBonus);
+                        score += gain;
+                        totalCollected += gain;
+                        floatingNumbers.push(new FloatingNumber(fruit.x, fruit.y-30, `🐕 +${gain}`));
+                        burstParticles(fruit.x, fruit.y, "#ffaa88", 8);
+                        fruits.splice(idx,1);
+                        spawnFruit();
+                        updateUI();
+                        saveGame();
+                    }
+                }
             }
         }
         
-        // Класс фрукта
+        // --- Режимы (без очистки экрана) ---
+        function setMode(mode) {
+            gameMode = mode;
+            document.getElementById('modeNormalBtn').classList.toggle('active', mode === 'normal');
+            document.getElementById('ModeSpeedBtn').classList.toggle('active', mode === 'speed');
+            document.getElementById('ModeBombBtn').classList.toggle('active', mode === 'bomb');
+            
+            if (mode === 'speed') {
+                if (!speedModeActive) {
+                    speedModeActive = true;
+                    speedModeTimer = 30;
+                    speedModeReward = 0;
+                    document.getElementById('timerDisplay').style.display = 'inline-block';
+                }
+            } else {
+                speedModeActive = false;
+                document.getElementById('timerDisplay').style.display = 'none';
+            }
+            // НЕ ОЧИЩАЕМ МАССИВ fruits, НЕ СПАВНИМ НОВЫЕ ФРУКТЫ
+        }
+        
+        function updateSpeedMode(delta) {
+            if (speedModeActive) {
+                speedModeTimer -= delta;
+                if (speedModeTimer <= 0) {
+                    speedModeActive = false;
+                    let bonus = Math.floor(speedModeReward * 0.5);
+                    if (bonus > 0) {
+                        score += bonus;
+                        totalCollected += bonus;
+                        floatingNumbers.push(new FloatingNumber(W/2, 100, `🏆 БОНУС ЗА СКОРОСТЬ +${bonus}!`));
+                        burstParticles(W/2, 100, "#ffdd88", 40);
+                        let ach = achievementList.find(a => a.id === 'speedClear');
+                        if (ach && !ach.claimed) { ach.claimed = true; score += ach.reward; totalCollected += ach.reward; floatingNumbers.push(new FloatingNumber(W/2, 150, `🏆 ${ach.name} +${ach.reward}`)); }
+                    }
+                    setMode('normal');
+                } else {
+                    document.getElementById('timerDisplay').innerHTML = `⏱️ ${Math.ceil(speedModeTimer)}с`;
+                }
+            }
+        }
+        
+        // ---------- КЛАССЫ ----------
         class Fruit {
-            constructor(x, y, type) {
+            constructor(x, y, typeId, isGolden = false, isBomb = false) {
                 this.x = x;
                 this.y = y;
-                this.type = type;   // 0: апельсин, 1: арбуз, 2: ананас
-                this.radius = 24;
+                this.radius = isBomb ? 28 : (isGolden ? 28 : 24);
                 this.vx = (Math.random() - 0.5) * 1.2;
                 this.vy = (Math.random() - 1) * 1.8;
                 this.gravity = 0.15;
                 this.bounce = 0.6;
+                this.isGolden = isGolden;
+                this.isBomb = isBomb;
+                
+                if (isBomb) {
+                    this.icon = "💣";
+                    this.baseValue = 0;
+                    this.name = "Бомба";
+                } else if (isGolden) {
+                    this.icon = "🌟";
+                    this.baseValue = 5;
+                    this.name = "Золотой фрукт";
+                } else {
+                    const item = itemsCatalog[typeId];
+                    this.icon = item.icon;
+                    this.baseValue = item.baseValue;
+                    this.name = item.name;
+                }
             }
             
             update() {
@@ -356,11 +665,13 @@
                 ctx.save();
                 ctx.shadowBlur = 8;
                 ctx.shadowColor = "rgba(0,0,0,0.3)";
-                const icons = ["🍊", "🍉", "🍍"];
-                ctx.font = `${this.radius * 1.8}px "Segoe UI Emoji"`;
+                ctx.font = `${this.radius * 1.6}px "Segoe UI Emoji"`;
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
-                ctx.fillText(icons[this.type], this.x, this.y);
+                if (this.isBomb) ctx.fillStyle = "#aa4444";
+                else if (this.isGolden) ctx.fillStyle = "#ffcc44";
+                else ctx.fillStyle = "#ffaa66";
+                ctx.fillText(this.icon, this.x, this.y);
                 ctx.restore();
             }
             
@@ -371,118 +682,228 @@
             }
         }
         
-        // Генерация нового фрукта
+        class Particle {
+            constructor(x,y,color,size=6){ this.x=x;this.y=y;this.vx=(Math.random()-0.5)*6;this.vy=(Math.random()-1.5)*5-2;this.life=1;this.color=color;this.size=size;}
+            update(){ this.x+=this.vx;this.y+=this.vy;this.vy+=0.2;this.life-=0.025;return this.life>0;}
+            draw(ctx){ ctx.globalAlpha=this.life;ctx.fillStyle=this.color;ctx.beginPath();ctx.arc(this.x,this.y,this.size*this.life,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
+        }
+        class FloatingNumber {
+            constructor(x,y,value){ this.x=x;this.y=y;this.value=value;this.life=1;}
+            update(){ this.y-=1.5;this.life-=0.02;return this.life>0;}
+            draw(ctx){ ctx.save();ctx.globalAlpha=this.life;ctx.font=`bold ${24+(1-this.life)*10}px "Segoe UI"`;ctx.fillStyle=`hsl(${45+this.life*40},100%,60%)`;ctx.shadowBlur=4;ctx.fillText(`+${this.value}`,this.x,this.y);ctx.restore();}
+        }
+        
+        let fruits = [];
+        let particles = [];
+        let floatingNumbers = [];
+        let combo = 0;
+        let comboTimeout = null;
+        let screenShake = 0;
+        let lastSpawnTimestamp = 0;
+        let spawnDelay = 0.6;
+        
         function spawnFruit() {
-            let type = Math.floor(Math.random() * 3);
+            let isBomb = false;
+            if (gameMode === 'bomb' && Math.random() < 0.25) isBomb = true;
+            
+            let isGolden = false;
+            let typeId = 0;
+            if (!isBomb) {
+                if (Math.random() < rareFruitChance) {
+                    isGolden = true;
+                } else {
+                    let totalWeight = itemsCatalog.reduce((s,item) => s + item.weight, 0);
+                    let rand = Math.random() * totalWeight;
+                    let accum = 0;
+                    for (let i=0; i<itemsCatalog.length; i++) {
+                        accum += itemsCatalog[i].weight;
+                        if (rand < accum) {
+                            typeId = i;
+                            break;
+                        }
+                    }
+                }
+            }
+            
             let x = 60 + Math.random() * (W - 120);
             let y = 40 + Math.random() * 150;
-            fruits.push(new Fruit(x, y, type));
+            let fruit = new Fruit(x, y, typeId, isGolden, isBomb);
+            fruits.push(fruit);
         }
         
-        // Создать взрыв частиц
-        function burstParticles(x, y, color, count = 18) {
-            for (let i = 0; i < count; i++) {
-                particles.push(new Particle(x, y, color, 5 + Math.random() * 7));
-            }
+        function burstParticles(x,y,color,count=18){
+            for(let i=0;i<count;i++) particles.push(new Particle(x,y,color,5+Math.random()*7));
         }
         
-        // Удалить фрукт и добавить очки
+        function showFloatingMessage(msg, x, y, color){
+            floatingNumbers.push({
+                draw: function(ctx){ ctx.font="bold 18px monospace"; ctx.fillStyle=color; ctx.fillText(msg, this.x, this.y); },
+                update: function(){ this.y-=1; this.life-=0.02; return this.life>0; },
+                x:x, y:y, life:1, color:color
+            });
+        }
+        
+        function showComboText(comboCount){
+            const comboDiv=document.getElementById('comboText');
+            comboDiv.innerText=`🔥 ${comboCount}x КОМБО! 🔥`;
+            comboDiv.style.opacity='1';
+            comboDiv.style.animation='bouncePop 0.3s ease-out';
+            setTimeout(()=>{ comboDiv.style.animation=''; },300);
+        }
+        
         function collectFruit(index, clickX, clickY) {
             const fruit = fruits[index];
             if (!fruit) return;
-            let gain = Math.floor(clickPower * multiplier);
-            score += gain;
-            if (score > bestScore) {
-                bestScore = score;
-                localStorage.setItem('fruitBest', bestScore);
-                document.getElementById('bestValue').innerText = bestScore;
+            
+            if (fruit.isBomb) {
+                let penalty = 50;
+                score = Math.max(0, score - penalty);
+                totalCollected = Math.max(0, totalCollected - penalty);
+                bombPenaltyCounter++;
+                floatingNumbers.push(new FloatingNumber(clickX, clickY-20, `💣 -${penalty}`));
+                burstParticles(clickX, clickY, "#ff4444", 25);
+                screenShake = 8;
+                fruits.splice(index,1);
+                spawnFruit();
+                updateUI();
+                saveGame();
+                if (comboTimeout) clearTimeout(comboTimeout);
+                combo = 0;
+                document.getElementById('comboText').style.opacity = '0';
+                return;
             }
+            
+            let baseGain = fruit.baseValue;
+            let gain = Math.floor(baseGain * clickPower * multiplier * (activeEvent?.type === 'double' ? 2 : 1));
+            if (gameMode === 'speed') {
+                gain = Math.floor(gain * 2);
+                speedModeReward += gain;
+            }
+            if (gameMode === 'bomb') {
+                gain = Math.floor(gain * 3);
+            }
+            score += gain;
+            totalCollected += gain;
+            if (fruit.isGolden) rareFruitsCollected++;
+            if (score > bestScore){ bestScore=score; localStorage.setItem('fruitBest',bestScore); document.getElementById('bestValue').innerText=bestScore;}
             updateUI();
             saveGame();
             
             if (comboTimeout) clearTimeout(comboTimeout);
             combo++;
-            if (combo >= 3) {
-                let comboBonus = Math.floor(gain * (combo * 0.2));
+            if (combo > maxCombo) maxCombo = combo;
+            let comboBonus = (combo >= 2) ? Math.floor(gain * (combo * 0.1 * comboBonusMultiplier)) : 0;
+            if (comboBonus > 0) {
                 score += comboBonus;
+                totalCollected += comboBonus;
                 updateUI();
+                floatingNumbers.push(new FloatingNumber(clickX+15, clickY-30, `+${comboBonus} комбо!`));
+            }
+            if (combo >= 3) {
                 showComboText(combo);
                 burstParticles(clickX, clickY, "#ffaa44", 25);
             } else {
                 burstParticles(clickX, clickY, "#ffaa66", 12);
             }
-            floatingNumbers.push(new FloatingNumber(clickX, clickY - 20, gain));
-            if (combo >= 2) {
-                floatingNumbers.push(new FloatingNumber(clickX + 20, clickY - 35, `x${combo} комбо!`));
-            }
-            
+            floatingNumbers.push(new FloatingNumber(clickX, clickY-20, gain));
             screenShake = 6;
             fruits.splice(index, 1);
             spawnFruit();
             
-            comboTimeout = setTimeout(() => {
-                combo = 0;
-                document.getElementById('comboText').style.opacity = '0';
-            }, 1800);
+            updatePet();
+            
+            comboTimeout = setTimeout(()=>{ combo=0; document.getElementById('comboText').style.opacity='0'; }, 1800);
+            checkAchievements();
+            updateStatsDisplay();
         }
         
-        function showComboText(comboCount) {
-            const comboDiv = document.getElementById('comboText');
-            comboDiv.innerText = `🔥 ${comboCount}x КОМБО! 🔥`;
-            comboDiv.style.opacity = '1';
-            comboDiv.style.animation = 'bouncePop 0.3s ease-out';
-            setTimeout(() => {
-                comboDiv.style.animation = '';
-            }, 300);
-        }
-        
-        // Улучшение
-        function upgrade() {
-            let cost = 50 + (upgradeLevel - 1) * 30;
-            if (score >= cost) {
-                score -= cost;
-                upgradeLevel++;
-                multiplier = 1 + (upgradeLevel - 1) * 0.5;
-                clickPower = 1 + (upgradeLevel - 1) * 0.8;
+        function checkAchievements() {
+            let anyNew = false;
+            for (let ach of achievementList) {
+                if (!ach.claimed && ach.condition()) {
+                    ach.claimed = true;
+                    score += ach.reward;
+                    totalCollected += ach.reward;
+                    floatingNumbers.push(new FloatingNumber(W/2, 150, `🏆 ${ach.name} +${ach.reward}`));
+                    burstParticles(W/2, 150, "#ffdd77", 40);
+                    anyNew = true;
+                }
+            }
+            if (anyNew) {
                 updateUI();
                 saveGame();
-                burstParticles(W/2, H/2, "#ffdd88", 40);
-                floatingNumbers.push(new FloatingNumber(W/2, H/2 - 40, "⭐ УЛУЧШЕНИЕ!"));
-                screenShake = 4;
-            } else {
-                floatingNumbers.push(new FloatingNumber(W/2, H/2 - 30, "💰 НЕ ХВАТАЕТ!"));
+                renderAchievementsInfo();
             }
         }
         
-        function resetGameHandler() {
-            resetGame(false);
-            saveGame();
+        function renderAchievementsInfo() {
+            const count = achievementList.filter(a => a.claimed).length;
+            document.getElementById('achievementCount').innerText = count;
         }
         
-        function updateUI() {
-            document.getElementById('scoreValue').innerText = Math.floor(score);
-            document.getElementById('multiplierValue').innerText = multiplier.toFixed(1);
-            document.getElementById('bestValue').innerText = bestScore;
+        function renderUpgradesPanel() {
+            const container = document.getElementById('upgradesGrid');
+            container.innerHTML = '';
+            upgrades.forEach(up => {
+                const cost = getUpgradeCost(up);
+                const card = document.createElement('div');
+                card.className = 'upgrade-card';
+                card.innerHTML = `
+                    <div class="upgrade-info">
+                        <div class="upgrade-name">${up.name} (lv.${up.level})</div>
+                        <div class="upgrade-desc">${up.desc}</div>
+                    </div>
+                    <div class="upgrade-cost">${cost === Infinity ? 'MAX' : cost+'💰'}</div>
+                `;
+                card.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    buyUpgrade(up.id);
+                });
+                if (cost === Infinity) card.style.opacity = '0.6';
+                container.appendChild(card);
+            });
         }
         
-        // Обработка кликов/тапов
+        function resetGameHandler(){
+            if(confirm("Сбросить весь прогресс?")){
+                localStorage.removeItem('fruitFiestaSaveV4');
+                localStorage.removeItem('fruitBest');
+                location.reload();
+            }
+        }
+        
+        function updateUI(){
+            document.getElementById('scoreValue').innerText=Math.floor(score);
+            document.getElementById('multiplierValue').innerText=multiplier.toFixed(1);
+            document.getElementById('bestValue').innerText=bestScore;
+            document.getElementById('totalCollected').innerText=Math.floor(totalCollected);
+            document.getElementById('maxCombo').innerText=maxCombo;
+            document.getElementById('petLevel').innerText = petLevel;
+        }
+        
+        function updateStatsDisplay(){
+            document.getElementById('totalCollected').innerText=Math.floor(totalCollected);
+            document.getElementById('maxCombo').innerText=maxCombo;
+            renderAchievementsInfo();
+        }
+        
         function handleCanvasClick(e) {
+            e.preventDefault();
+            e.stopPropagation();
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
             let clientX, clientY;
             if (e.touches) {
-                // Touch событие
                 clientX = e.touches[0].clientX;
                 clientY = e.touches[0].clientY;
-                e.preventDefault();
             } else {
                 clientX = e.clientX;
                 clientY = e.clientY;
             }
             let mouseX = (clientX - rect.left) * scaleX;
             let mouseY = (clientY - rect.top) * scaleY;
-            
             for (let i = fruits.length-1; i >= 0; i--) {
                 if (fruits[i].isClicked(mouseX, mouseY)) {
                     collectFruit(i, mouseX, mouseY);
@@ -491,90 +912,94 @@
             }
         }
         
-        // Анимация частиц и чисел
-        function updateEffects() {
-            for (let i=0; i<particles.length; i++) {
-                if (!particles[i].update()) {
-                    particles.splice(i,1);
-                    i--;
-                }
-            }
-            for (let i=0; i<floatingNumbers.length; i++) {
-                if (!floatingNumbers[i].update()) {
-                    floatingNumbers.splice(i,1);
-                    i--;
-                }
-            }
+        function updateEffects(){
+            for(let i=0;i<particles.length;i++) if(!particles[i].update()) particles.splice(i--,1);
+            for(let i=0;i<floatingNumbers.length;i++) if(!floatingNumbers[i].update()) floatingNumbers.splice(i--,1);
         }
         
-        // Рисуем фон
-        function drawBackground() {
-            let grad = ctx.createLinearGradient(0,0,0,H);
-            grad.addColorStop(0, "#ffe6b0");
-            grad.addColorStop(1, "#ffcc88");
-            ctx.fillStyle = grad;
-            ctx.fillRect(0,0,W,H);
-            ctx.fillStyle = "rgba(255,255,240,0.7)";
-            ctx.shadowBlur = 0;
-            ctx.beginPath();
-            ctx.ellipse(120, 80, 60, 40, 0, 0, Math.PI*2);
-            ctx.ellipse(180, 70, 70, 45, 0, 0, Math.PI*2);
-            ctx.ellipse(240, 85, 55, 38, 0, 0, Math.PI*2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.ellipse(700, 110, 70, 45, 0, 0, Math.PI*2);
-            ctx.ellipse(770, 95, 60, 42, 0, 0, Math.PI*2);
-            ctx.fill();
-            ctx.fillStyle = "#7cb518";
-            for(let i=0;i<12;i++){
-                ctx.fillRect(i*90, H-45, 45, 45);
-            }
-            ctx.fillStyle = "#f3b33d";
-            ctx.font = "bold 28px monospace";
-            ctx.fillText("🍍 FRUIT FIESTA 🍉", W/2-160, 60);
+        function drawBackground(){
+            let grad=ctx.createLinearGradient(0,0,0,H);
+            grad.addColorStop(0,"#ffe6b0"); grad.addColorStop(1,"#ffcc88");
+            ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+            ctx.fillStyle="rgba(255,255,240,0.7)";
+            ctx.beginPath(); ctx.ellipse(120,80,60,40,0,0,Math.PI*2); ctx.ellipse(180,70,70,45,0,0,Math.PI*2); ctx.ellipse(240,85,55,38,0,0,Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(700,110,70,45,0,0,Math.PI*2); ctx.ellipse(770,95,60,42,0,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle="#7cb518";
+            for(let i=0;i<12;i++) ctx.fillRect(i*90,H-45,45,45);
+            ctx.fillStyle="#f3b33d"; ctx.font="bold 28px monospace"; ctx.fillText("🍍 FRUIT FIESTA 🍉",W/2-160,60);
         }
         
-        function draw() {
-            if (screenShake > 0) {
-                ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
-                screenShake--;
-            }
+        function draw(){
+            if(screenShake>0){ ctx.translate((Math.random()-0.5)*screenShake,(Math.random()-0.5)*screenShake); screenShake--; }
             drawBackground();
-            for (let f of fruits) f.draw(ctx);
-            for (let p of particles) p.draw(ctx);
-            for (let n of floatingNumbers) n.draw(ctx);
-            if (combo > 0) {
-                ctx.font = "bold 24px 'Segoe UI'";
-                ctx.fillStyle = `#ffaa33`;
-                ctx.shadowBlur = 6;
-                ctx.fillText(`⚡ КОМБО x${combo} ⚡`, W-150, 80);
-            }
-            ctx.shadowBlur = 0;
-            if (screenShake > 0) ctx.setTransform(1,0,0,1,0,0);
+            for(let f of fruits) f.draw(ctx);
+            for(let p of particles) p.draw(ctx);
+            for(let n of floatingNumbers) n.draw(ctx);
+            if(combo>0){ ctx.font="bold 24px 'Segoe UI'"; ctx.fillStyle="#ffaa33"; ctx.shadowBlur=6; ctx.fillText(`⚡ КОМБО x${combo} ⚡`,W-150,80); }
+            ctx.shadowBlur=0;
+            if(screenShake>0) ctx.setTransform(1,0,0,1,0,0);
         }
         
-        // Анимация
-        function animate() {
+        function updateSpawn(delta){
+            lastSpawnTimestamp += delta;
+            if(lastSpawnTimestamp >= spawnDelay && fruits.length < 25){
+                spawnFruit();
+                lastSpawnTimestamp = 0;
+            }
+        }
+        
+        let lastFrame = 0;
+        function animate(now){
+            let delta = Math.min(0.033, (now-lastFrame)/1000);
+            if(delta>0){
+                for(let f of fruits) f.update();
+                updateSpawn(delta);
+                updateEffects();
+                updateSpeedMode(delta);
+                draw();
+                lastFrame = now;
+            }
             requestAnimationFrame(animate);
-            for (let f of fruits) f.update();
-            updateEffects();
-            draw();
         }
         
-        // Инициализация
-        function init() {
+        function init(){
             loadGame();
-            if (fruits.length === 0) {
-                for (let i = 0; i < 8; i++) spawnFruit();
-            }
+            if(fruits.length===0) for(let i=0;i<8;i++) spawnFruit();
+            renderUpgradesPanel();
             updateUI();
+            updateStatsDisplay();
+            
             canvas.addEventListener('click', handleCanvasClick);
-            canvas.addEventListener('touchstart', handleCanvasClick);
-            document.getElementById('upgradeBtn').addEventListener('click', upgrade);
-            document.getElementById('resetBtn').addEventListener('click', resetGameHandler);
-            document.getElementById('mobileModeBtn').addEventListener('click', toggleMobileMode);
-            loadMobileMode();
-            animate();
+            canvas.addEventListener('touchstart', handleCanvasClick, { passive: false });
+            canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+            
+            document.getElementById('mobileModeBtn').addEventListener('click', (e) => {
+                e.preventDefault();
+                document.body.classList.toggle('mobile-mode');
+                const isMobile = document.body.classList.contains('mobile-mode');
+                localStorage.setItem('fruitMobileMode', isMobile ? 'true' : 'false');
+                e.target.textContent = isMobile ? '💻 Десктопный режим' : '📱 Мобильный режим';
+            });
+            document.getElementById('resetBtn').addEventListener('click', (e) => {
+                e.preventDefault();
+                resetGameHandler();
+            });
+            document.getElementById('claimDailyBtn').addEventListener('click', claimDailyBonus);
+            document.getElementById('modeNormalBtn').addEventListener('click', () => setMode('normal'));
+            document.getElementById('ModeSpeedBtn').addEventListener('click', () => setMode('speed'));
+            document.getElementById('ModeBombBtn').addEventListener('click', () => setMode('bomb'));
+            
+            if(localStorage.getItem('fruitMobileMode') === 'true') {
+                document.body.classList.add('mobile-mode');
+                document.getElementById('mobileModeBtn').textContent = '💻 Десктопный режим';
+            }
+            setInterval(() => {
+                updateEventDisplay();
+                checkDailyBonusAvailability();
+                startEventIfNeeded();
+            }, 1000);
+            lastFrame = performance.now();
+            animate(lastFrame);
             window.addEventListener('beforeunload', () => saveGame());
         }
         
