@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Космические приключения</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="game-over-screen" style="display:none;">
+            <h1>Игра окончена!</h1>
+            <p>Ваш счет: <span id="final-score">0</span></p>
+            <button onclick="restartGame();">Начать заново</button>
+        </p>
+        </div>
+    </div>
+    <script src="data.cpp"></script>
+    <!-- Твои ассеты -->
+        <img id="ship-img" src="ship.png" style="display:none;">
+        <img id="enemy-img" src="enemy.png" style="display:none;">
+        <img id="asteroid-img" src="asteroid.png" style="display:none;">
+</body>
+</html>

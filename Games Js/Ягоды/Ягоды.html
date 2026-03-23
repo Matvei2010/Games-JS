@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🍍 FRUIT FIESTA — Сочная аркада</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(145deg, #1a2a2f, #0e1a1f);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Poppins', 'Arial', sans-serif;
+            /* Убираем overflow: hidden, чтобы разрешить прокрутку */
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .game-wrapper {
+            background: radial-gradient(circle at 30% 20%, #ffd89b, #c7e9fb);
+            border-radius: 64px;
+            padding: 20px;
+            box-shadow: 0 30px 40px rgba(0,0,0,0.5), inset 0 1px 4px rgba(255,255,200,0.8);
+            transition: 0.3s;
+            max-width: 100%;
+            width: fit-content;
+            margin: auto;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 48px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            cursor: pointer;
+            background: #ffefcf;
+            width: 100%;
+            height: auto;
+        }
+
+        .ui-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            gap: 20px;
+            flex-wrap: wrap;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(12px);
+            border-radius: 80px;
+            padding: 12px 28px;
+            transition: all 0.3s;
+        }
+
+        .score-box, .multiplier-box, .best-box {
+            background: #f9e7b3;
+            padding: 6px 20px;
+            border-radius: 60px;
+            font-weight: bold;
+            color: #c25d2e;
+            box-shadow: inset 0 1px 4px #fff3bf, 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .score-box span, .multiplier-box span, .best-box span {
+            font-size: 28px;
+            font-weight: 800;
+            color: #ff6633;
+            margin-left: 8px;
+        }
+
+        button {
+            background: linear-gradient(145deg, #ffaa55, #ff8844);
+            border: none;
+            padding: 8px 28px;
+            border-radius: 60px;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.2s;
+            color: white;
+            text-shadow: 0 1px 2px black;
+            box-shadow: 0 5px 0 #aa5533;
+        }
+
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #aa5533;
+        }
+
+        .combo {
+            position: fixed;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            font-weight: bold;
+            color: #ffdd44;
+            text-shadow: 0 0 20px #ff6600;
+            pointer-events: none;
+            z-index: 200;
+            white-space: nowrap;
+            opacity: 0;
+            transition: 0.2s;
+        }
+
+        @keyframes bouncePop {
+            0% { transform: scale(0.5); opacity: 0; }
+            80% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Мобильный режим */
+        body.mobile-mode .game-wrapper {
+            padding: 10px;
+        }
+
+        body.mobile-mode .ui-bar {
+            flex-direction: column;
+            border-radius: 40px;
+            padding: 15px 20px;
+            gap: 12px;
+        }
+
+        body.mobile-mode .score-box,
+        body.mobile-mode .multiplier-box,
+        body.mobile-mode .best-box {
+            width: 100%;
+            text-align: center;
+            padding: 10px;
+        }
+
+        body.mobile-mode .score-box span,
+        body.mobile-mode .multiplier-box span,
+        body.mobile-mode .best-box span {
+            font-size: 32px;
+        }
+
+        body.mobile-mode button {
+            padding: 12px 20px;
+            font-size: 20px;
+            width: 100%;
+        }
+
+        body.mobile-mode canvas {
+            width: 100%;
+            height: auto;
+            border-radius: 32px;
+        }
+
+        body.mobile-mode .combo {
+            font-size: 36px;
+            top: 25%;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <div class="game-wrapper">
+        <canvas id="gameCanvas" width="1000" height="600"></canvas>
+        <div class="ui-bar">
+            <div class="score-box">🍍 СЧЁТ: <span id="scoreValue">0</span></div>
+            <div class="multiplier-box">✨ МНОЖИТЕЛЬ: <span id="multiplierValue">1</span>x</div>
+            <div class="best-box">🏆 РЕКОРД: <span id="bestValue">0</span></div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <button id="mobileModeBtn">📱 Мобильный режим</button>
+                <button id="upgradeBtn">⚡ УЛУЧШЕНИЕ (50💰)</button>
+                <button id="resetBtn">🔄 НОВАЯ ИГРА</button>
+            </div>
+        </div>
+    </div>
+    <div class="combo" id="comboText">🔥 КОМБО!</div>
+</div>
+
+<script>
+    (function(){
+        // ---------- СОЧНАЯ АРКАДА FRUIT FIESTA ----------
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width = 1000;
+        const H = canvas.height = 600;
+        
+        // ----- ИГРОВЫЕ ПАРАМЕТРЫ -----
+        let score = 0;
+        let bestScore = localStorage.getItem('fruitBest') ? parseInt(localStorage.getItem('fruitBest')) : 0;
+        let multiplier = 1;
+        let upgradeLevel = 1;      // увеличивает множитель и стоимость
+        let clickPower = 1;         // базовые очки за клик (1 * множитель)
+        
+        // Список фруктов
+        let fruits = [];
+        let particles = [];
+        let floatingNumbers = [];
+        
+        // Таймер комбо
+        let combo = 0;
+        let comboTimeout = null;
+        
+        // Визуальный эффект
+        let screenShake = 0;
+        
+        // ---------- ФУНКЦИИ СОХРАНЕНИЯ ----------
+        function saveGame() {
+            const saveData = {
+                score: score,
+                upgradeLevel: upgradeLevel,
+                multiplier: multiplier,
+                clickPower: clickPower,
+                bestScore: bestScore
+            };
+            localStorage.setItem('fruitFiestaSave', JSON.stringify(saveData));
+        }
+        
+        function loadGame() {
+            const saved = localStorage.getItem('fruitFiestaSave');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    score = data.score || 0;
+                    upgradeLevel = data.upgradeLevel || 1;
+                    multiplier = data.multiplier || 1;
+                    clickPower = data.clickPower || 1;
+                    bestScore = data.bestScore || 0;
+                    if (bestScore > (localStorage.getItem('fruitBest') || 0)) {
+                        localStorage.setItem('fruitBest', bestScore);
+                    }
+                } catch(e) { console.warn("Ошибка загрузки сохранения"); }
+            }
+            updateUI();
+        }
+        
+        function resetGame(keepSave = false) {
+            score = 0;
+            multiplier = 1;
+            upgradeLevel = 1;
+            clickPower = 1;
+            combo = 0;
+            if (comboTimeout) clearTimeout(comboTimeout);
+            fruits = [];
+            for (let i = 0; i < 8; i++) spawnFruit();
+            updateUI();
+            document.getElementById('comboText').style.opacity = '0';
+            if (!keepSave) {
+                localStorage.removeItem('fruitFiestaSave');
+            } else {
+                saveGame();
+            }
+        }
+        
+        // ---------- МОБИЛЬНЫЙ РЕЖИМ ----------
+        function toggleMobileMode() {
+            document.body.classList.toggle('mobile-mode');
+            const isMobile = document.body.classList.contains('mobile-mode');
+            localStorage.setItem('fruitMobileMode', isMobile ? 'true' : 'false');
+            const btn = document.getElementById('mobileModeBtn');
+            btn.textContent = isMobile ? '💻 Десктопный режим' : '📱 Мобильный режим';
+        }
+        
+        function loadMobileMode() {
+            const savedMode = localStorage.getItem('fruitMobileMode');
+            if (savedMode === 'true') {
+                document.body.classList.add('mobile-mode');
+                document.getElementById('mobileModeBtn').textContent = '💻 Десктопный режим';
+            } else {
+                document.body.classList.remove('mobile-mode');
+                document.getElementById('mobileModeBtn').textContent = '📱 Мобильный режим';
+            }
+        }
+        
+        // Эффекты частиц
+        class Particle {
+            constructor(x, y, color, size = 6) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 6;
+                this.vy = (Math.random() - 1.5) * 5 - 2;
+                this.life = 1.0;
+                this.color = color;
+                this.size = size;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.2;
+                this.life -= 0.025;
+                return this.life > 0;
+            }
+            draw(ctx) {
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * this.life, 0, Math.PI*2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+        
+        class FloatingNumber {
+            constructor(x, y, value) {
+                this.x = x;
+                this.y = y;
+                this.value = value;
+                this.life = 1.0;
+            }
+            update() {
+                this.y -= 1.5;
+                this.life -= 0.02;
+                return this.life > 0;
+            }
+            draw(ctx) {
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.font = `bold ${24 + (1-this.life)*10}px "Segoe UI"`;
+                ctx.fillStyle = `hsl(${45 + this.life*40}, 100%, 60%)`;
+                ctx.shadowBlur = 4;
+                ctx.fillText(`+${this.value}`, this.x, this.y);
+                ctx.restore();
+            }
+        }
+        
+        // Класс фрукта
+        class Fruit {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type;   // 0: апельсин, 1: арбуз, 2: ананас
+                this.radius = 24;
+                this.vx = (Math.random() - 0.5) * 1.2;
+                this.vy = (Math.random() - 1) * 1.8;
+                this.gravity = 0.15;
+                this.bounce = 0.6;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += this.gravity;
+                if (this.y + this.radius >= H - 20) {
+                    this.y = H - 20 - this.radius;
+                    this.vy = -this.vy * this.bounce;
+                    if (Math.abs(this.vy) < 0.8) this.vy = 0;
+                }
+                if (this.x - this.radius <= 0) { this.x = this.radius; this.vx = -this.vx * 0.8; }
+                if (this.x + this.radius >= W) { this.x = W - this.radius; this.vx = -this.vx * 0.8; }
+                if (this.y - this.radius <= 0 && this.vy < 0) this.vy = -this.vy * 0.5;
+            }
+            
+            draw(ctx) {
+                ctx.save();
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = "rgba(0,0,0,0.3)";
+                const icons = ["🍊", "🍉", "🍍"];
+                ctx.font = `${this.radius * 1.8}px "Segoe UI Emoji"`;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(icons[this.type], this.x, this.y);
+                ctx.restore();
+            }
+            
+            isClicked(mx, my) {
+                const dx = mx - this.x;
+                const dy = my - this.y;
+                return (dx*dx + dy*dy) < this.radius * this.radius;
+            }
+        }
+        
+        // Генерация нового фрукта
+        function spawnFruit() {
+            let type = Math.floor(Math.random() * 3);
+            let x = 60 + Math.random() * (W - 120);
+            let y = 40 + Math.random() * 150;
+            fruits.push(new Fruit(x, y, type));
+        }
+        
+        // Создать взрыв частиц
+        function burstParticles(x, y, color, count = 18) {
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(x, y, color, 5 + Math.random() * 7));
+            }
+        }
+        
+        // Удалить фрукт и добавить очки
+        function collectFruit(index, clickX, clickY) {
+            const fruit = fruits[index];
+            if (!fruit) return;
+            let gain = Math.floor(clickPower * multiplier);
+            score += gain;
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('fruitBest', bestScore);
+                document.getElementById('bestValue').innerText = bestScore;
+            }
+            updateUI();
+            saveGame();
+            
+            if (comboTimeout) clearTimeout(comboTimeout);
+            combo++;
+            if (combo >= 3) {
+                let comboBonus = Math.floor(gain * (combo * 0.2));
+                score += comboBonus;
+                updateUI();
+                showComboText(combo);
+                burstParticles(clickX, clickY, "#ffaa44", 25);
+            } else {
+                burstParticles(clickX, clickY, "#ffaa66", 12);
+            }
+            floatingNumbers.push(new FloatingNumber(clickX, clickY - 20, gain));
+            if (combo >= 2) {
+                floatingNumbers.push(new FloatingNumber(clickX + 20, clickY - 35, `x${combo} комбо!`));
+            }
+            
+            screenShake = 6;
+            fruits.splice(index, 1);
+            spawnFruit();
+            
+            comboTimeout = setTimeout(() => {
+                combo = 0;
+                document.getElementById('comboText').style.opacity = '0';
+            }, 1800);
+        }
+        
+        function showComboText(comboCount) {
+            const comboDiv = document.getElementById('comboText');
+            comboDiv.innerText = `🔥 ${comboCount}x КОМБО! 🔥`;
+            comboDiv.style.opacity = '1';
+            comboDiv.style.animation = 'bouncePop 0.3s ease-out';
+            setTimeout(() => {
+                comboDiv.style.animation = '';
+            }, 300);
+        }
+        
+        // Улучшение
+        function upgrade() {
+            let cost = 50 + (upgradeLevel - 1) * 30;
+            if (score >= cost) {
+                score -= cost;
+                upgradeLevel++;
+                multiplier = 1 + (upgradeLevel - 1) * 0.5;
+                clickPower = 1 + (upgradeLevel - 1) * 0.8;
+                updateUI();
+                saveGame();
+                burstParticles(W/2, H/2, "#ffdd88", 40);
+                floatingNumbers.push(new FloatingNumber(W/2, H/2 - 40, "⭐ УЛУЧШЕНИЕ!"));
+                screenShake = 4;
+            } else {
+                floatingNumbers.push(new FloatingNumber(W/2, H/2 - 30, "💰 НЕ ХВАТАЕТ!"));
+            }
+        }
+        
+        function resetGameHandler() {
+            resetGame(false);
+            saveGame();
+        }
+        
+        function updateUI() {
+            document.getElementById('scoreValue').innerText = Math.floor(score);
+            document.getElementById('multiplierValue').innerText = multiplier.toFixed(1);
+            document.getElementById('bestValue').innerText = bestScore;
+        }
+        
+        // Обработка кликов/тапов
+        function handleCanvasClick(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let clientX, clientY;
+            if (e.touches) {
+                // Touch событие
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+                e.preventDefault();
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            let mouseX = (clientX - rect.left) * scaleX;
+            let mouseY = (clientY - rect.top) * scaleY;
+            
+            for (let i = fruits.length-1; i >= 0; i--) {
+                if (fruits[i].isClicked(mouseX, mouseY)) {
+                    collectFruit(i, mouseX, mouseY);
+                    break;
+                }
+            }
+        }
+        
+        // Анимация частиц и чисел
+        function updateEffects() {
+            for (let i=0; i<particles.length; i++) {
+                if (!particles[i].update()) {
+                    particles.splice(i,1);
+                    i--;
+                }
+            }
+            for (let i=0; i<floatingNumbers.length; i++) {
+                if (!floatingNumbers[i].update()) {
+                    floatingNumbers.splice(i,1);
+                    i--;
+                }
+            }
+        }
+        
+        // Рисуем фон
+        function drawBackground() {
+            let grad = ctx.createLinearGradient(0,0,0,H);
+            grad.addColorStop(0, "#ffe6b0");
+            grad.addColorStop(1, "#ffcc88");
+            ctx.fillStyle = grad;
+            ctx.fillRect(0,0,W,H);
+            ctx.fillStyle = "rgba(255,255,240,0.7)";
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.ellipse(120, 80, 60, 40, 0, 0, Math.PI*2);
+            ctx.ellipse(180, 70, 70, 45, 0, 0, Math.PI*2);
+            ctx.ellipse(240, 85, 55, 38, 0, 0, Math.PI*2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(700, 110, 70, 45, 0, 0, Math.PI*2);
+            ctx.ellipse(770, 95, 60, 42, 0, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = "#7cb518";
+            for(let i=0;i<12;i++){
+                ctx.fillRect(i*90, H-45, 45, 45);
+            }
+            ctx.fillStyle = "#f3b33d";
+            ctx.font = "bold 28px monospace";
+            ctx.fillText("🍍 FRUIT FIESTA 🍉", W/2-160, 60);
+        }
+        
+        function draw() {
+            if (screenShake > 0) {
+                ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+                screenShake--;
+            }
+            drawBackground();
+            for (let f of fruits) f.draw(ctx);
+            for (let p of particles) p.draw(ctx);
+            for (let n of floatingNumbers) n.draw(ctx);
+            if (combo > 0) {
+                ctx.font = "bold 24px 'Segoe UI'";
+                ctx.fillStyle = `#ffaa33`;
+                ctx.shadowBlur = 6;
+                ctx.fillText(`⚡ КОМБО x${combo} ⚡`, W-150, 80);
+            }
+            ctx.shadowBlur = 0;
+            if (screenShake > 0) ctx.setTransform(1,0,0,1,0,0);
+        }
+        
+        // Анимация
+        function animate() {
+            requestAnimationFrame(animate);
+            for (let f of fruits) f.update();
+            updateEffects();
+            draw();
+        }
+        
+        // Инициализация
+        function init() {
+            loadGame();
+            if (fruits.length === 0) {
+                for (let i = 0; i < 8; i++) spawnFruit();
+            }
+            updateUI();
+            canvas.addEventListener('click', handleCanvasClick);
+            canvas.addEventListener('touchstart', handleCanvasClick);
+            document.getElementById('upgradeBtn').addEventListener('click', upgrade);
+            document.getElementById('resetBtn').addEventListener('click', resetGameHandler);
+            document.getElementById('mobileModeBtn').addEventListener('click', toggleMobileMode);
+            loadMobileMode();
+            animate();
+            window.addEventListener('beforeunload', () => saveGame());
+        }
+        
+        init();
+    })();
+</script>
+</body>
+</html>
