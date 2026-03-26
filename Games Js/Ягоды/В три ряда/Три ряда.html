@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Match-3: Три в ряд | Плавные анимации</title>
+    <title>Match-3: Бесконечный сюжет, магазин, выбор поля</title>
     <style>
+        /* ========== СТИЛИ (полностью из второй версии) ========== */
         * {
             user-select: none;
             -webkit-tap-highlight-color: transparent;
@@ -70,6 +71,46 @@
             transform: translateY(2px);
             box-shadow: 0 2px 0 #aa5533;
         }
+        .mode-select {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+        }
+        .mode-card {
+            background: #2c2b26;
+            border-radius: 64px;
+            padding: 30px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            border: 2px solid #ffaa66;
+        }
+        .mode-card h2 {
+            color: #ffd966;
+            margin-bottom: 20px;
+        }
+        .mode-card button {
+            width: 100%;
+            margin: 10px 0;
+            padding: 14px;
+            font-size: 20px;
+            background: linear-gradient(145deg, #ffaa55, #ff8844);
+            border: none;
+            border-radius: 60px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            text-shadow: 0 1px 2px black;
+            box-shadow: 0 5px 0 #aa5533;
+        }
         .game-container {
             display: none;
             background: #2c3e4e;
@@ -94,7 +135,7 @@
             width: 100%;
             height: auto;
             max-width: 500px;
-            touch-action: manipulation;
+            touch-action: none;
         }
         .info-panel {
             display: flex;
@@ -123,6 +164,30 @@
             font-weight: 800;
             color: #ff6633;
             margin-left: 8px;
+        }
+        .goal-box {
+            background: #4a6a5e;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-weight: bold;
+            color: #ffefc0;
+            font-size: 1rem;
+            white-space: nowrap;
+        }
+        .coins-box {
+            background: #ffaa44;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-weight: bold;
+            color: #2c2b26;
+            font-size: 1rem;
+            white-space: nowrap;
+        }
+        .coins-box span {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #ff6633;
+            margin-left: 5px;
         }
         button {
             background: linear-gradient(145deg, #ffaa55, #ff8844);
@@ -173,6 +238,25 @@
             color: #ffd966;
             margin-bottom: 20px;
         }
+        .shop-item {
+            background: #3a2a1e;
+            border-radius: 40px;
+            padding: 12px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #ffefc0;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .shop-item button {
+            background: #ffaa55;
+            padding: 6px 16px;
+            font-size: 0.9rem;
+            box-shadow: 0 3px 0 #aa5533;
+            min-width: 80px;
+        }
         .setting-item {
             display: flex;
             justify-content: space-between;
@@ -221,6 +305,27 @@
             width: 100%;
             min-height: 40px;
         }
+        .field-select {
+            background: #3a2a1e;
+            border-radius: 40px;
+            padding: 12px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #ffefc0;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .field-select select {
+            background: #ffefc0;
+            border: none;
+            border-radius: 30px;
+            padding: 8px 16px;
+            font-size: 1rem;
+            cursor: pointer;
+            min-width: 120px;
+        }
         .audio-input {
             width: 100%;
         }
@@ -246,16 +351,24 @@
             .menu-card button { font-size: 18px; padding: 12px; min-height: 52px; }
             .asset-item label { font-size: 10px; }
             .score-box span { font-size: 1.4rem; }
+            .coins-box span { font-size: 1.2rem; }
             .asset-grid { grid-template-columns: 1fr; gap: 8px; }
             .info-panel { gap: 8px; padding: 8px 12px; justify-content: center; }
             button { padding: 8px 14px; font-size: 0.85rem; min-height: 44px; }
             .score-box { padding: 4px 12px; font-size: 1rem; }
+            .coins-box { padding: 4px 12px; font-size: 0.9rem; }
             .setting-item label { font-size: 16px; }
             .modal-content { padding: 20px 16px; border-radius: 32px; }
+            .shop-item { flex-direction: column; text-align: center; }
+            .shop-item button { width: 100%; }
+            .field-select { flex-direction: column; text-align: center; }
+            .field-select select { width: 100%; }
         }
         @media (max-width: 480px) {
             .info-panel button { font-size: 0.75rem; padding: 6px 12px; }
             .score-box span { font-size: 1.2rem; }
+            .coins-box span { font-size: 1.1rem; }
+            .goal-box { font-size: 0.85rem; padding: 4px 12px; }
             .copyright { font-size: 9px; }
         }
     </style>
@@ -266,19 +379,51 @@
             <h1>🍎 MATCH-3</h1>
             <button id="playBtn">▶ ИГРАТЬ</button>
             <button id="settingsBtn">⚙️ НАСТРОЙКИ</button>
-            <div class="copyright">Настройте звук и значки в меню ⚙️</div>
+            <div class="copyright">Перетащи фишку на соседнюю!</div>
+        </div>
+    </div>
+
+    <div id="modeSelect" class="mode-select" style="display: none;">
+        <div class="mode-card">
+            <h2>Выберите режим</h2>
+            <button id="endlessModeBtn">♾️ Бесконечный</button>
+            <button id="storyModeBtn">📖 Сюжетный</button>
+            <button id="cancelModeBtn">🔙 Назад</button>
         </div>
     </div>
 
     <div id="gameContainer" class="game-container">
         <canvas id="gameCanvas" width="500" height="500"></canvas>
         <div class="info-panel">
-            <div class="score-box">🍎 СЧЁТ: <span id="scoreValue">0</span></div>
-            <button id="shuffleBtn">🔄 ПЕРЕМЕШАТЬ</button>
+            <div class="score-box" id="scoreBox">🍎 СЧЁТ: <span id="scoreValue">0</span></div>
+            <div class="coins-box" id="coinsBox">💰 МОНЕТЫ: <span id="coinsValue">0</span></div>
+            <div class="goal-box" id="goalBox" style="display: none;">🎯 ЗАДАНИЕ: <span id="goalText">-</span></div>
+            <button id="shopBtn">🛒 МАГАЗИН</button>
             <button id="menuReturnBtn">🏠 МЕНЮ</button>
             <button id="gameSettingsBtn">🎵 НАСТРОЙКИ</button>
         </div>
-        <div class="copyright">Кликни на ячейку, затем на соседнюю – поменяй местами, собери три в ряд! 💣 (4+ в ряд даёт бомбу)</div>
+        <div class="copyright">Нажми и перетащи фишку на соседнюю — поменяй местами, собери три в ряд! 💣 (4+ в ряд даёт бомбу)</div>
+    </div>
+
+    <!-- Модалка магазина -->
+    <div id="shopModal" class="modal">
+        <div class="modal-content">
+            <h3>🛍️ МАГАЗИН</h3>
+            <div class="coins-box" style="background:#ffaa44; margin-bottom:15px;">💰 МОНЕТ: <span id="shopCoins">0</span></div>
+            <div class="shop-item">
+                <span>💣 Бомба (поставить случайную бомбу)</span>
+                <button id="buyBombBtn">Купить (50)</button>
+            </div>
+            <div class="shop-item">
+                <span>🔄 Перемешивание</span>
+                <button id="buyShuffleBtn">Купить (30)</button>
+            </div>
+            <div class="shop-item">
+                <span>🔍 Подсказка (подсветит ход)</span>
+                <button id="buyHintBtn">Купить (20)</button>
+            </div>
+            <button class="close-modal" id="closeShopBtn">Закрыть</button>
+        </div>
     </div>
 
     <div id="settingsModal" class="modal">
@@ -295,6 +440,16 @@
             <div class="setting-item">
                 <label>🔊 Громкость</label>
                 <input type="range" id="volumeSlider" min="0" max="100" value="50">
+            </div>
+            <div class="field-select">
+                <label>🗺️ Тип поля</label>
+                <select id="fieldTypeSelect">
+                    <option value="classic">Классическое 8×8</option>
+                    <option value="small">Маленькое 6×6</option>
+                    <option value="narrow">Узкое 8×6</option>
+                    <option value="square">Квадратное 7×7</option>
+                    <option value="obstacles">С препятствиями (8×8)</option>
+                </select>
             </div>
             <div class="setting-item" style="margin-top: 20px;">
                 <label>🎶 Своя музыка (фон)</label>
@@ -317,962 +472,1385 @@
                 <div class="asset-item"><label>Тип 6</label><input type="file" id="asset5" accept="image/*"></div>
                 <div class="asset-item"><label>💣 Бомба</label><input type="file" id="bombAsset" accept="image/*"></div>
             </div>
+            <div class="setting-item">
+                <button id="resetProgressBtn" style="background: #aa5533; box-shadow: 0 4px 0 #663322;">🗑️ Сбросить прогресс</button>
+            </div>
             <div class="copyright">Загрузите свои изображения (до 6 типов и бомба) — они сразу применятся и сохранятся</div>
             <button class="close-modal" id="closeSettingsBtn">Закрыть</button>
         </div>
     </div>
 
-<script>
-(function(){
-    // ========== АУДИО СИСТЕМА ==========
-    let audioCtx = null;
-    let musicEnabled = true;
-    let sfxEnabled = true;
-    let musicVolume = 0.5;
-    let masterGain = null;
-    let isAudioInit = false;
-    let customMusicAudio = null;
-    let customMatchSoundAudio = null;
-    let musicInterval = null;
-    let currentMelody = 0;
-    const melodies = [
-        { name: "Калинка", notes: [523.25,587.33,622.25,523.25,440.00,392.00,349.23,392.00,440.00,392.00,349.23,311.13,293.66,261.63,293.66,261.63,349.23,392.00,440.00,523.25,523.25,493.88,440.00,392.00,349.23,311.13,293.66,261.63], waveType: "triangle", intervalMs: 550 },
-        { name: "Веселая", notes: [523.25,587.33,659.25,523.25,493.88,440.00,392.00,440.00,493.88,523.25,587.33,659.25,698.46,659.25,587.33,523.25], waveType: "sine", intervalMs: 480 },
-        { name: "Электро", notes: [440.00,554.37,659.25,880.00,659.25,554.37,440.00,329.63,293.66,329.63,440.00,554.37,659.25,440.00], waveType: "sawtooth", intervalMs: 400 }
-    ];
-    let currentNoteIndex = 0;
+    <script>
+        (function(){
+            // ========== АУДИО СИСТЕМА (полная из второго кода) ==========
+            let audioCtx = null;
+            let musicEnabled = true;
+            let sfxEnabled = true;
+            let musicVolume = 0.5;
+            let masterGain = null;
+            let isAudioInit = false;
+            let customMusicAudio = null;
+            let customMatchSoundAudio = null;
+            let musicInterval = null;
+            let currentMelody = 0;
+            const melodies = [
+                { name: "Калинка", notes: [523.25,587.33,622.25,523.25,440.00,392.00,349.23,392.00,440.00,392.00,349.23,311.13,293.66,261.63,293.66,261.63,349.23,392.00,440.00,523.25,523.25,493.88,440.00,392.00,349.23,311.13,293.66,261.63], waveType: "triangle", intervalMs: 550 },
+                { name: "Веселая", notes: [523.25,587.33,659.25,523.25,493.88,440.00,392.00,440.00,493.88,523.25,587.33,659.25,698.46,659.25,587.33,523.25], waveType: "sine", intervalMs: 480 },
+                { name: "Электро", notes: [440.00,554.37,659.25,880.00,659.25,554.37,440.00,329.63,293.66,329.63,440.00,554.37,659.25,440.00], waveType: "sawtooth", intervalMs: 400 }
+            ];
+            let currentNoteIndex = 0;
 
-    function playMelodyTick() {
-        if (!musicEnabled || !audioCtx || !masterGain) return;
-        const melody = melodies[currentMelody];
-        const note = melody.notes[currentNoteIndex % melody.notes.length];
-        const now = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = melody.waveType;
-        osc.frequency.value = note;
-        gain.gain.setValueAtTime(0.55 * musicVolume, now);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
-        osc.connect(gain);
-        gain.connect(masterGain);
-        osc.start();
-        osc.stop(now + 0.3);
-        currentNoteIndex++;
-    }
-    function startSynthMusic() {
-        if (musicInterval) clearInterval(musicInterval);
-        if (!musicEnabled || !audioCtx || !masterGain) return;
-        const melody = melodies[currentMelody];
-        musicInterval = setInterval(() => {
-            if (musicEnabled && audioCtx && masterGain) playMelodyTick();
-        }, melody.intervalMs);
-    }
-    function stopMusic() {
-        if (musicInterval) { clearInterval(musicInterval); musicInterval = null; }
-        if (customMusicAudio) {
-            customMusicAudio.pause();
-            customMusicAudio.currentTime = 0;
-        }
-    }
-    function startMusic() {
-        stopMusic();
-        if (!musicEnabled) return;
-        if (customMusicAudio && customMusicAudio.src && customMusicAudio.src !== "") {
-            customMusicAudio.volume = musicVolume;
-            customMusicAudio.loop = true;
-            customMusicAudio.play().catch(e => console.log("Audio play failed", e));
-        } else {
-            startSynthMusic();
-        }
-    }
-    function setMusicEnabled(enabled) {
-        musicEnabled = enabled;
-        saveAudioSettings();
-        if (enabled) startMusic();
-        else stopMusic();
-    }
-    function setSfxEnabled(enabled) {
-        sfxEnabled = enabled;
-        saveAudioSettings();
-    }
-    function setMusicVolume(volume) {
-        musicVolume = Math.min(1, Math.max(0, volume));
-        if (masterGain) masterGain.gain.value = musicVolume;
-        if (customMusicAudio) customMusicAudio.volume = musicVolume;
-        saveAudioSettings();
-    }
-    function setMelody(index) {
-        currentMelody = Math.min(index, melodies.length-1);
-        saveAudioSettings();
-        if (musicEnabled && !customMusicAudio) {
-            stopMusic();
-            startSynthMusic();
-        }
-    }
-    function saveAudioSettings() {
-        localStorage.setItem('match3MusicEnabled', musicEnabled);
-        localStorage.setItem('match3SfxEnabled', sfxEnabled);
-        localStorage.setItem('match3MusicVolume', musicVolume);
-        localStorage.setItem('match3CurrentMelody', currentMelody);
-        if (customMusicAudio && customMusicAudio.src) {
-            localStorage.setItem('match3CustomMusic', customMusicAudio.src);
-        } else {
-            localStorage.removeItem('match3CustomMusic');
-        }
-        if (customMatchSoundAudio && customMatchSoundAudio.src) {
-            localStorage.setItem('match3CustomMatchSound', customMatchSoundAudio.src);
-        } else {
-            localStorage.removeItem('match3CustomMatchSound');
-        }
-    }
-    function loadAudioSettings() {
-        const savedMusic = localStorage.getItem('match3MusicEnabled');
-        if (savedMusic !== null) musicEnabled = savedMusic === 'true';
-        const savedSfx = localStorage.getItem('match3SfxEnabled');
-        if (savedSfx !== null) sfxEnabled = savedSfx === 'true';
-        const savedVolume = localStorage.getItem('match3MusicVolume');
-        if (savedVolume !== null) musicVolume = parseFloat(savedVolume);
-        const savedMelody = localStorage.getItem('match3CurrentMelody');
-        if (savedMelody !== null) currentMelody = parseInt(savedMelody);
-        document.getElementById('musicToggle').checked = musicEnabled;
-        document.getElementById('sfxToggle').checked = sfxEnabled;
-        document.getElementById('volumeSlider').value = musicVolume * 100;
-        const customMusicSrc = localStorage.getItem('match3CustomMusic');
-        if (customMusicSrc) {
-            const audio = new Audio(customMusicSrc);
-            audio.loop = true;
-            audio.volume = musicVolume;
-            customMusicAudio = audio;
-            if (musicEnabled) startMusic();
-        }
-        const customSoundSrc = localStorage.getItem('match3CustomMatchSound');
-        if (customSoundSrc) {
-            const audio = new Audio(customSoundSrc);
-            audio.volume = musicVolume;
-            customMatchSoundAudio = audio;
-        }
-    }
-    function initAudio() {
-        if (isAudioInit) return;
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            masterGain = audioCtx.createGain();
-            masterGain.gain.value = musicVolume;
-            masterGain.connect(audioCtx.destination);
-        }
-        isAudioInit = true;
-        if (musicEnabled) startMusic();
-    }
-    function playMatchSound() {
-        if (!sfxEnabled) return;
-        if (customMatchSoundAudio && customMatchSoundAudio.src) {
-            const sound = customMatchSoundAudio.cloneNode();
-            sound.volume = musicVolume;
-            sound.play().catch(e => console.log("Sound play failed", e));
-        } else if (audioCtx) {
-            const now = audioCtx.currentTime;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.value = 880;
-            gain.gain.setValueAtTime(0.3 * musicVolume, now);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
-            osc.frequency.exponentialRampToValueAtTime(440, now + 0.15);
-            osc.connect(gain);
-            gain.connect(masterGain);
-            osc.start();
-            osc.stop(now + 0.2);
-        }
-    }
-    function playBombSound() {
-        if (!sfxEnabled) return;
-        if (audioCtx) {
-            const now = audioCtx.currentTime;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.value = 220;
-            gain.gain.setValueAtTime(0.5 * musicVolume, now);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
-            osc.frequency.exponentialRampToValueAtTime(110, now + 0.3);
-            osc.connect(gain);
-            gain.connect(masterGain);
-            osc.start();
-            osc.stop(now + 0.5);
-        }
-    }
-
-    // ========== ИГРОВАЯ ЛОГИКА ==========
-    const ROWS = 8, COLS = 8;
-    const TYPES = 6;
-    const BOMB_TYPE = -2;
-    let board = [];
-    let score = 0;
-    let selectedRow = -1, selectedCol = -1;
-    let isProcessing = false;
-    let tileImages = [];
-    let bombImage = null;
-    const defaultColors = ["#e34234","#ffa500","#c04040","#ff69b4","#8b5a2b","#3c9e3c"];
-    const defaultEmojis = ["🍎","🍊","🍒","🍓","🍇","🍉"];
-
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    let tileSize = canvas.width / COLS;
-
-    function resizeCanvas() {
-        const container = document.getElementById('gameContainer');
-        const maxWidth = Math.min(container.clientWidth - 40, 500);
-        const newSize = Math.max(300, maxWidth);
-        canvas.width = newSize;
-        canvas.height = newSize;
-        tileSize = canvas.width / COLS;
-        drawBoard();
-    }
-    window.addEventListener('resize', () => resizeCanvas());
-
-    // ========== ОСНОВНЫЕ ИГРОВЫЕ ФУНКЦИИ ==========
-    function getMatchesInfo() {
-        let matchesSet = new Set();
-        let longMatches = [];
-        for (let r = 0; r < ROWS; r++) {
-            let len = 1;
-            for (let c = 1; c <= COLS; c++) {
-                if (c < COLS && board[r][c] === board[r][c-1] && board[r][c] >= 0) {
-                    len++;
+            function playMelodyTick() {
+                if (!musicEnabled || !audioCtx || !masterGain) return;
+                const melody = melodies[currentMelody];
+                const note = melody.notes[currentNoteIndex % melody.notes.length];
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = melody.waveType;
+                osc.frequency.value = note;
+                gain.gain.setValueAtTime(0.55 * musicVolume, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+                osc.connect(gain);
+                gain.connect(masterGain);
+                osc.start();
+                osc.stop(now + 0.3);
+                currentNoteIndex++;
+            }
+            function startSynthMusic() {
+                if (musicInterval) clearInterval(musicInterval);
+                if (!musicEnabled || !audioCtx || !masterGain) return;
+                const melody = melodies[currentMelody];
+                musicInterval = setInterval(() => {
+                    if (musicEnabled && audioCtx && masterGain) playMelodyTick();
+                }, melody.intervalMs);
+            }
+            function stopMusic() {
+                if (musicInterval) { clearInterval(musicInterval); musicInterval = null; }
+                if (customMusicAudio) {
+                    customMusicAudio.pause();
+                    customMusicAudio.currentTime = 0;
+                }
+            }
+            function startMusic() {
+                stopMusic();
+                if (!musicEnabled) return;
+                if (customMusicAudio && customMusicAudio.src && customMusicAudio.src !== "") {
+                    customMusicAudio.volume = musicVolume;
+                    customMusicAudio.loop = true;
+                    customMusicAudio.play().catch(e => console.log("Audio play failed", e));
                 } else {
-                    if (len >= 3) {
-                        if (len >= 4) {
-                            const centerCol = c - Math.floor(len/2) - 1;
-                            longMatches.push({ row: r, col: centerCol, length: len, isHorizontal: true });
-                        } else {
-                            for (let i = c - len; i < c; i++) matchesSet.add(`${r},${i}`);
-                        }
-                    }
-                    len = 1;
+                    startSynthMusic();
                 }
             }
-        }
-        for (let c = 0; c < COLS; c++) {
-            let len = 1;
-            for (let r = 1; r <= ROWS; r++) {
-                if (r < ROWS && board[r][c] === board[r-1][c] && board[r][c] >= 0) {
-                    len++;
+            function setMusicEnabled(enabled) {
+                musicEnabled = enabled;
+                saveAudioSettings();
+                if (enabled) startMusic();
+                else stopMusic();
+            }
+            function setSfxEnabled(enabled) {
+                sfxEnabled = enabled;
+                saveAudioSettings();
+            }
+            function setMusicVolume(volume) {
+                musicVolume = Math.min(1, Math.max(0, volume));
+                if (masterGain) masterGain.gain.value = musicVolume;
+                if (customMusicAudio) customMusicAudio.volume = musicVolume;
+                saveAudioSettings();
+            }
+            function setMelody(index) {
+                currentMelody = Math.min(index, melodies.length-1);
+                saveAudioSettings();
+                if (musicEnabled && !customMusicAudio) {
+                    stopMusic();
+                    startSynthMusic();
+                }
+            }
+            function saveAudioSettings() {
+                localStorage.setItem('match3MusicEnabled', musicEnabled);
+                localStorage.setItem('match3SfxEnabled', sfxEnabled);
+                localStorage.setItem('match3MusicVolume', musicVolume);
+                localStorage.setItem('match3CurrentMelody', currentMelody);
+                if (customMusicAudio && customMusicAudio.src) {
+                    localStorage.setItem('match3CustomMusic', customMusicAudio.src);
                 } else {
-                    if (len >= 3) {
-                        if (len >= 4) {
-                            const centerRow = r - Math.floor(len/2) - 1;
-                            longMatches.push({ row: centerRow, col: c, length: len, isHorizontal: false });
-                        } else {
-                            for (let i = r - len; i < r; i++) matchesSet.add(`${i},${c}`);
-                        }
-                    }
-                    len = 1;
+                    localStorage.removeItem('match3CustomMusic');
                 }
-            }
-        }
-        return { matchesSet, longMatches };
-    }
-    function hasMatches() {
-        const { matchesSet, longMatches } = getMatchesInfo();
-        return matchesSet.size > 0 || longMatches.length > 0;
-    }
-    function clearMatchesWithoutScore() {
-        while (true) {
-            const { matchesSet, longMatches } = getMatchesInfo();
-            if (matchesSet.size === 0 && longMatches.length === 0) break;
-            for (const coord of matchesSet) {
-                let [r, c] = coord.split(',').map(Number);
-                if (board[r][c] >= 0) board[r][c] = -1;
-            }
-            for (const lm of longMatches) {
-                const { row, col, length, isHorizontal } = lm;
-                if (isHorizontal) {
-                    for (let i = 0; i < length; i++) {
-                        const cc = col - Math.floor(length/2) + i;
-                        if (cc >= 0 && cc < COLS && board[row][cc] >= 0) board[row][cc] = -1;
-                    }
+                if (customMatchSoundAudio && customMatchSoundAudio.src) {
+                    localStorage.setItem('match3CustomMatchSound', customMatchSoundAudio.src);
                 } else {
-                    for (let i = 0; i < length; i++) {
-                        const rr = row - Math.floor(length/2) + i;
-                        if (rr >= 0 && rr < ROWS && board[rr][col] >= 0) board[rr][col] = -1;
-                    }
+                    localStorage.removeItem('match3CustomMatchSound');
                 }
             }
-            applyGravityAndRefill();
-        }
-    }
-    function removeMatchesAndAddScore() {
-        const { matchesSet, longMatches } = getMatchesInfo();
-        if (matchesSet.size === 0 && longMatches.length === 0) return 0;
-        let removedCount = 0;
-        for (const lm of longMatches) {
-            const { row, col, length } = lm;
-            if (board[row][col] !== BOMB_TYPE) {
-                board[row][col] = BOMB_TYPE;
-                score += 100 * length;
-                document.getElementById('scoreValue').innerText = score;
-                if (sfxEnabled) playMatchSound();
-            }
-            if (lm.isHorizontal) {
-                for (let i = 0; i < length; i++) {
-                    const cc = col - Math.floor(length/2) + i;
-                    if (cc >= 0 && cc < COLS && board[row][cc] !== BOMB_TYPE && board[row][cc] >= 0) {
-                        board[row][cc] = -1;
-                        removedCount++;
-                    }
+            function loadAudioSettings() {
+                const savedMusic = localStorage.getItem('match3MusicEnabled');
+                if (savedMusic !== null) musicEnabled = savedMusic === 'true';
+                const savedSfx = localStorage.getItem('match3SfxEnabled');
+                if (savedSfx !== null) sfxEnabled = savedSfx === 'true';
+                const savedVolume = localStorage.getItem('match3MusicVolume');
+                if (savedVolume !== null) musicVolume = parseFloat(savedVolume);
+                const savedMelody = localStorage.getItem('match3CurrentMelody');
+                if (savedMelody !== null) currentMelody = parseInt(savedMelody);
+                document.getElementById('musicToggle').checked = musicEnabled;
+                document.getElementById('sfxToggle').checked = sfxEnabled;
+                document.getElementById('volumeSlider').value = musicVolume * 100;
+                const customMusicSrc = localStorage.getItem('match3CustomMusic');
+                if (customMusicSrc) {
+                    const audio = new Audio(customMusicSrc);
+                    audio.loop = true;
+                    audio.volume = musicVolume;
+                    customMusicAudio = audio;
+                    if (musicEnabled) startMusic();
                 }
-            } else {
-                for (let i = 0; i < length; i++) {
-                    const rr = row - Math.floor(length/2) + i;
-                    if (rr >= 0 && rr < ROWS && board[rr][col] !== BOMB_TYPE && board[rr][col] >= 0) {
-                        board[rr][col] = -1;
-                        removedCount++;
-                    }
+                const customSoundSrc = localStorage.getItem('match3CustomMatchSound');
+                if (customSoundSrc) {
+                    const audio = new Audio(customSoundSrc);
+                    audio.volume = musicVolume;
+                    customMatchSoundAudio = audio;
                 }
             }
-        }
-        for (const coord of matchesSet) {
-            let [r, c] = coord.split(',').map(Number);
-            if (board[r][c] !== -1 && board[r][c] !== BOMB_TYPE) {
-                board[r][c] = -1;
-                removedCount++;
-            }
-        }
-        score += removedCount * 10;
-        document.getElementById('scoreValue').innerText = score;
-        if (sfxEnabled && removedCount > 0) playMatchSound();
-        return removedCount;
-    }
-    function applyGravityAndRefill() {
-        for (let c = 0; c < COLS; c++) {
-            let column = [];
-            for (let r = ROWS-1; r >= 0; r--) {
-                if (board[r][c] !== -1 && board[r][c] !== BOMB_TYPE) column.push(board[r][c]);
-                else if (board[r][c] === BOMB_TYPE) column.push(BOMB_TYPE);
-            }
-            while (column.length < ROWS) column.push(Math.floor(Math.random() * TYPES));
-            column.reverse();
-            for (let r = 0; r < ROWS; r++) board[r][c] = column[r];
-        }
-    }
-    function clearMatchesAndRefill() {
-        let anyRemoved = false;
-        while (true) {
-            let removed = removeMatchesAndAddScore();
-            if (removed === 0) break;
-            anyRemoved = true;
-            applyGravityAndRefill();
-        }
-        if (anyRemoved) drawBoard();
-        return anyRemoved;
-    }
-    function hasValidMoves() {
-        for (let r = 0; r < ROWS; r++) {
-            for (let c = 0; c < COLS; c++) {
-                if (board[r][c] === BOMB_TYPE) continue;
-                if (c+1 < COLS && board[r][c+1] !== BOMB_TYPE) {
-                    swapCells(r,c, r,c+1);
-                    let has = hasMatches();
-                    swapCells(r,c, r,c+1);
-                    if (has) return true;
+            function initAudio() {
+                if (isAudioInit) return;
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    masterGain = audioCtx.createGain();
+                    masterGain.gain.value = musicVolume;
+                    masterGain.connect(audioCtx.destination);
                 }
-                if (r+1 < ROWS && board[r+1][c] !== BOMB_TYPE) {
-                    swapCells(r,c, r+1,c);
-                    let has = hasMatches();
-                    swapCells(r,c, r+1,c);
-                    if (has) return true;
+                isAudioInit = true;
+                if (musicEnabled) startMusic();
+            }
+            function playMatchSound() {
+                if (!sfxEnabled) return;
+                if (customMatchSoundAudio && customMatchSoundAudio.src) {
+                    const sound = customMatchSoundAudio.cloneNode();
+                    sound.volume = musicVolume;
+                    sound.play().catch(e => console.log("Sound play failed", e));
+                } else if (audioCtx) {
+                    const now = audioCtx.currentTime;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = 880;
+                    gain.gain.setValueAtTime(0.3 * musicVolume, now);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+                    osc.frequency.exponentialRampToValueAtTime(440, now + 0.15);
+                    osc.connect(gain);
+                    gain.connect(masterGain);
+                    osc.start();
+                    osc.stop(now + 0.2);
                 }
             }
-        }
-        return false;
-    }
-    function swapCells(r1,c1, r2,c2) {
-        let temp = board[r1][c1];
-        board[r1][c1] = board[r2][c2];
-        board[r2][c2] = temp;
-    }
-    function shuffleBoard() {
-        if (isProcessing) return;
-        isProcessing = true;
-        let attempts = 0;
-        let success = false;
-        while (attempts < 50 && !success) {
-            let newBoard = Array(ROWS).fill().map(() => Array(COLS).fill(0));
-            for (let r = 0; r < ROWS; r++)
-                for (let c = 0; c < COLS; c++)
-                    newBoard[r][c] = Math.floor(Math.random() * TYPES);
-            let oldBoard = board;
-            board = newBoard;
-            clearMatchesWithoutScore();
-            if (hasValidMoves()) {
-                success = true;
-            } else {
-                board = oldBoard;
+            function playBombSound() {
+                if (!sfxEnabled) return;
+                if (audioCtx) {
+                    const now = audioCtx.currentTime;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.value = 220;
+                    gain.gain.setValueAtTime(0.5 * musicVolume, now);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+                    osc.frequency.exponentialRampToValueAtTime(110, now + 0.3);
+                    osc.connect(gain);
+                    gain.connect(masterGain);
+                    osc.start();
+                    osc.stop(now + 0.5);
+                }
             }
-            attempts++;
-        }
-        if (!success) {
-            for (let r = 0; r < ROWS; r++)
-                for (let c = 0; c < COLS; c++)
-                    if (board[r][c] !== BOMB_TYPE) board[r][c] = Math.floor(Math.random() * TYPES);
-                    else board[r][c] = Math.floor(Math.random() * TYPES);
-            clearMatchesAndRefill();
-        }
-        drawBoard();
-        selectedRow = -1;
-        isProcessing = false;
-        saveGameState();
-    }
-    function initBoard() {
-        board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
-        for (let r = 0; r < ROWS; r++)
-            for (let c = 0; c < COLS; c++)
-                board[r][c] = Math.floor(Math.random() * TYPES);
-        clearMatchesAndRefill();
-    }
 
-    // ========== АНИМАЦИИ ==========
-    let animationFrame = null;
-    let activeAnimations = {
-        swap: null,
-        falling: []
-    };
-    let pendingAction = null;
+            // ========== ИГРОВАЯ ЛОГИКА С ПОДДЕРЖКОЙ РАЗНЫХ ПОЛЕЙ И БЕСКОНЕЧНОГО СЮЖЕТА ==========
+            let rows = 8, cols = 8;          // динамические размеры
+            const TYPES = 6;
+            const BOMB_TYPE = -2;
+            const WALL_TYPE = -3;            // препятствие
+            let board = [];
+            let score = 0;
+            let coins = 0;
+            let isProcessing = false;
+            let tileImages = [];
+            let bombImage = null;
+            const defaultColors = ["#e34234","#ffa500","#c04040","#ff69b4","#8b5a2b","#3c9e3c"];
+            const defaultEmojis = ["🍎","🍊","🍒","🍓","🍇","🍉"];
 
-    function startAnimationLoop() {
-        if (animationFrame) cancelAnimationFrame(animationFrame);
-        function update() {
-            let anyActive = false;
-            if (activeAnimations.swap) {
-                anyActive = true;
-                let s = activeAnimations.swap;
-                s.progress += 16 / s.duration;
-                if (s.progress >= 1) {
-                    activeAnimations.swap = null;
-                    if (s.onComplete) s.onComplete();
-                } else {
-                    drawBoard();
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            let tileSize = 1; // будет пересчитано при resize
+
+            let dragActive = false;
+            let dragStartRow = -1, dragStartCol = -1;
+            let dragTargetRow = -1, dragTargetCol = -1;
+
+            let gameMode = "endless";
+            // Переменные для сюжетного режима (бесконечная генерация)
+            let storyGoal = { type: 0, count: 5, name: "" };
+            let storyCollected = 0;
+
+            let hintCells = [];
+            let hintTimeout = null;
+
+            // Вспомогательная функция для генерации названия по типу
+            function getItemNameByType(type) {
+                const names = ["🍪 Печенак", "🍩 Пончиков", "🍬 Леденец", "🍫 Шоколада", "🍡 Карамель", "⭐ Звёзд"];
+                return names[type % names.length];
+            }
+
+            // Генерация случайного задания
+            function generateRandomGoal() {
+                const randomType = Math.floor(Math.random() * TYPES);
+                const randomCount = Math.floor(Math.random() * (40 - 5 + 1) + 5); // от 5 до 40
+                return {
+                    type: randomType,
+                    count: randomCount,
+                    name: getItemNameByType(randomType)
+                };
+            }
+
+            // --- Функции для работы с полем (из второго кода) ---
+            function getFieldConfig(type) {
+                switch(type) {
+                    case "small": return { rows: 6, cols: 6, walls: [] };
+                    case "narrow": return { rows: 8, cols: 6, walls: [] };
+                    case "square": return { rows: 7, cols: 7, walls: [] };
+                    case "obstacles": return {
+                        rows: 8, cols: 8,
+                        walls: [
+                            [2,2], [2,3], [3,2], [3,3],
+                            [5,5], [5,6], [6,5], [6,6]
+                        ]
+                    };
+                    default: return { rows: 8, cols: 8, walls: [] };
                 }
             }
-            if (activeAnimations.falling.length > 0) {
-                anyActive = true;
-                let allFinished = true;
-                for (let f of activeAnimations.falling) {
-                    f.progress += 16 / f.duration;
-                    if (f.progress < 1) allFinished = false;
+
+            function setFieldType(type) {
+                const cfg = getFieldConfig(type);
+                rows = cfg.rows;
+                cols = cfg.cols;
+                board = Array(rows).fill().map(() => Array(cols).fill(0));
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        board[r][c] = Math.floor(Math.random() * TYPES);
+                    }
                 }
+                for (let w of cfg.walls) {
+                    if (w[0] < rows && w[1] < cols) board[w[0]][w[1]] = WALL_TYPE;
+                }
+                clearMatchesAndRefill();
+                resizeCanvas();
                 drawBoard();
-                if (allFinished) {
-                    activeAnimations.falling = [];
-                    if (pendingAction) {
-                        let action = pendingAction;
-                        pendingAction = null;
-                        action();
-                    } else {
-                        isProcessing = false;
-                    }
-                    drawBoard();
+                localStorage.setItem('match3_field_type', type);
+            }
+
+            function isWall(row, col) {
+                return row >= 0 && row < rows && col >= 0 && col < cols && board[row][col] === WALL_TYPE;
+            }
+
+            // ========== ИГРОВЫЕ ФУНКЦИИ (адаптированы под новые переменные) ==========
+            function updateCoinsUI() {
+                document.getElementById('coinsValue').innerText = coins;
+                const shopCoinsSpan = document.getElementById('shopCoins');
+                if (shopCoinsSpan) shopCoinsSpan.innerText = coins;
+            }
+
+            function addCoins(amount) {
+                coins += amount;
+                updateCoinsUI();
+                saveGameState();
+            }
+
+            function spendCoins(amount) {
+                if (coins >= amount) {
+                    coins -= amount;
+                    updateCoinsUI();
+                    saveGameState();
+                    return true;
                 }
+                return false;
             }
-            if (anyActive) {
-                animationFrame = requestAnimationFrame(update);
-            } else {
-                animationFrame = null;
-            }
-        }
-        update();
-    }
 
-    function drawTile(r, c, x, y, type) {
-        if (type === -1) {
-            ctx.fillStyle = "#aa8866";
-            ctx.fillRect(x, y, tileSize-1, tileSize-1);
-            return;
-        }
-        if (type === BOMB_TYPE) {
-            if (bombImage && bombImage.complete && bombImage.naturalWidth > 0) {
-                ctx.drawImage(bombImage, x, y, tileSize, tileSize);
-            } else {
-                ctx.fillStyle = "#666666";
-                ctx.fillRect(x, y, tileSize-1, tileSize-1);
-                ctx.fillStyle = "#fff3e0";
-                ctx.font = `${Math.floor(tileSize * 0.6)}px "Segoe UI Emoji"`;
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText("💣", x + tileSize/2, y + tileSize/2);
-            }
-        } else {
-            if (tileImages[type] && tileImages[type].complete && tileImages[type].naturalWidth > 0) {
-                ctx.drawImage(tileImages[type], x, y, tileSize, tileSize);
-            } else {
-                ctx.fillStyle = defaultColors[type % defaultColors.length];
-                ctx.fillRect(x, y, tileSize-1, tileSize-1);
-                ctx.fillStyle = "#fff3e0";
-                ctx.font = `${Math.floor(tileSize * 0.6)}px "Segoe UI Emoji"`;
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(defaultEmojis[type % defaultEmojis.length], x + tileSize/2, y + tileSize/2);
-            }
-        }
-        ctx.strokeStyle = "#b87c4f";
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(x, y, tileSize, tileSize);
-        if (selectedRow === r && selectedCol === c) {
-            ctx.save();
-            ctx.shadowBlur = 6;
-            ctx.shadowColor = "#ffcc44";
-            ctx.strokeStyle = "#ffaa33";
-            ctx.lineWidth = 4;
-            ctx.strokeRect(x+2, y+2, tileSize-5, tileSize-5);
-            ctx.restore();
-        }
-    }
-
-    function drawBoard() {
-        if (activeAnimations.swap) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            for (let r = 0; r < ROWS; r++) {
-                for (let c = 0; c < COLS; c++) {
-                    let x = c * tileSize;
-                    let y = r * tileSize;
-                    let type = board[r][c];
-                    let offsetX = 0, offsetY = 0;
-                    if (activeAnimations.swap) {
-                        let s = activeAnimations.swap;
-                        if ((r === s.row1 && c === s.col1) || (r === s.row2 && c === s.col2)) {
-                            let targetRow, targetCol;
-                            if (r === s.row1 && c === s.col1) {
-                                targetRow = s.row2;
-                                targetCol = s.col2;
-                            } else {
-                                targetRow = s.row1;
-                                targetCol = s.col1;
-                            }
-                            let t = s.progress;
-                            let startX = x;
-                            let startY = y;
-                            let endX = targetCol * tileSize;
-                            let endY = targetRow * tileSize;
-                            offsetX = (endX - startX) * t;
-                            offsetY = (endY - startY) * t;
+            function buyBomb() {
+                if (spendCoins(50)) {
+                    let freeCells = [];
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            if (board[r][c] >= 0) freeCells.push({r,c});
                         }
                     }
-                    drawTile(r, c, x + offsetX, y + offsetY, type);
-                }
-            }
-            return;
-        }
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for (let r = 0; r < ROWS; r++) {
-            for (let c = 0; c < COLS; c++) {
-                let x = c * tileSize;
-                let y = r * tileSize;
-                let type = board[r][c];
-                let offsetY = 0;
-                for (let f of activeAnimations.falling) {
-                    if (f.toRow === r && f.toCol === c && f.fromRow !== undefined) {
-                        let t = f.progress;
-                        let startY = f.fromRow * tileSize;
-                        let endY = r * tileSize;
-                        offsetY = (endY - startY) * t;
-                        type = f.type;
-                        break;
+                    if (freeCells.length === 0) {
+                        alert("Нет свободных клеток для бомбы!");
+                        addCoins(50);
+                        return;
                     }
-                }
-                drawTile(r, c, x, y + offsetY, type);
-            }
-        }
-    }
-
-    function animateSwap(r1,c1, r2,c2, onComplete) {
-        if (activeAnimations.swap) return;
-        activeAnimations.swap = {
-            row1: r1, col1: c1,
-            row2: r2, col2: c2,
-            progress: 0,
-            duration: 200,
-            onComplete: () => {
-                swapCells(r1, c1, r2, c2);
-                drawBoard();
-                if (onComplete) onComplete();
-            }
-        };
-        startAnimationLoop();
-        drawBoard();
-    }
-
-    function animateFall(changes, onComplete) {
-        activeAnimations.falling = changes.map(c => ({
-            fromRow: c.fromRow,
-            fromCol: c.fromCol,
-            toRow: c.toRow,
-            toCol: c.toCol,
-            type: c.type,
-            progress: 0,
-            duration: 150
-        }));
-        pendingAction = onComplete;
-        startAnimationLoop();
-        drawBoard();
-    }
-
-    function trySwap(r1,c1, r2,c2) {
-        if (isProcessing) return false;
-        if (Math.abs(r1-r2) + Math.abs(c1-c2) !== 1) return false;
-        isProcessing = true;
-        animateSwap(r1, c1, r2, c2, () => {
-            if (hasMatches()) {
-                processMatchesAndCascade();
-            } else {
-                animateSwap(r2, c2, r1, c1, () => {
-                    isProcessing = false;
-                    selectedRow = -1;
-                    selectedCol = -1;
+                    const cell = freeCells[Math.floor(Math.random() * freeCells.length)];
+                    board[cell.r][cell.c] = BOMB_TYPE;
                     drawBoard();
-                });
-            }
-        });
-        return true;
-    }
-
-    function processMatchesAndCascade() {
-        function step() {
-            let removed = removeMatchesAndAddScore();
-            if (removed > 0) {
-                let changes = [];
-                let oldBoard = board.map(row => [...row]);
-                applyGravityAndRefill();
-                for (let c = 0; c < COLS; c++) {
-                    let oldCol = [];
-                    for (let r = 0; r < ROWS; r++) oldCol.push(oldBoard[r][c]);
-                    let newCol = [];
-                    for (let r = 0; r < ROWS; r++) newCol.push(board[r][c]);
-                    for (let r = 0; r < ROWS; r++) {
-                        if (oldCol[r] !== newCol[r] && oldCol[r] !== -1 && oldCol[r] !== BOMB_TYPE) {
-                            for (let rr = r+1; rr < ROWS; rr++) {
-                                if (newCol[rr] === oldCol[r]) {
-                                    changes.push({
-                                        fromRow: r,
-                                        fromCol: c,
-                                        toRow: rr,
-                                        toCol: c,
-                                        type: oldCol[r]
-                                    });
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-                if (changes.length > 0) {
-                    animateFall(changes, () => {
-                        drawBoard();
-                        step();
-                    });
+                    saveGameState();
+                    alert("Бомба установлена!");
                 } else {
-                    drawBoard();
-                    step();
+                    alert("Недостаточно монет!");
                 }
-            } else {
-                if (!hasValidMoves()) {
+            }
+
+            function buyShuffle() {
+                if (spendCoins(30)) {
                     shuffleBoard();
+                    alert("Доска перемешана!");
                 } else {
-                    isProcessing = false;
+                    alert("Недостаточно монет!");
                 }
-                selectedRow = -1; selectedCol = -1;
+            }
+
+            function findHint() {
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        if (board[r][c] === BOMB_TYPE || isWall(r,c)) continue;
+                        if (c+1 < cols && !isWall(r,c+1) && board[r][c+1] !== BOMB_TYPE) {
+                            swapCells(r,c, r,c+1);
+                            let has = hasMatches();
+                            swapCells(r,c, r,c+1);
+                            if (has) return { row1: r, col1: c, row2: r, col2: c+1 };
+                        }
+                        if (r+1 < rows && !isWall(r+1,c) && board[r+1][c] !== BOMB_TYPE) {
+                            swapCells(r,c, r+1,c);
+                            let has = hasMatches();
+                            swapCells(r,c, r+1,c);
+                            if (has) return { row1: r, col1: c, row2: r+1, col2: c };
+                        }
+                    }
+                }
+                return null;
+            }
+
+            function buyHint() {
+                if (spendCoins(20)) {
+                    const hint = findHint();
+                    if (hint) {
+                        hintCells = [
+                            { row: hint.row1, col: hint.col1 },
+                            { row: hint.row2, col: hint.col2 }
+                        ];
+                        drawBoard();
+                        if (hintTimeout) clearTimeout(hintTimeout);
+                        hintTimeout = setTimeout(() => {
+                            hintCells = [];
+                            drawBoard();
+                        }, 2000);
+                    } else {
+                        alert("Нет доступных ходов! Попробуйте перемешать.");
+                        addCoins(20);
+                    }
+                } else {
+                    alert("Недостаточно монет!");
+                }
+            }
+
+            function updateGoalUI() {
+                const goalBox = document.getElementById('goalBox');
+                const goalText = document.getElementById('goalText');
+                if (gameMode === "story") {
+                    goalBox.style.display = "inline-block";
+                    const remaining = storyGoal.count - storyCollected;
+                    goalText.innerText = `Собери ${storyGoal.count} ${storyGoal.name} (осталось ${remaining})`;
+                } else {
+                    goalBox.style.display = "none";
+                }
+            }
+
+            function countCollectedFromMatches(removedTiles) {
+                if (gameMode !== "story") return;
+                const targetType = storyGoal.type;
+                let collectedThisStep = 0;
+                for (let type of removedTiles) {
+                    if (type === targetType) collectedThisStep++;
+                }
+                if (collectedThisStep > 0) {
+                    storyCollected += collectedThisStep;
+                    updateGoalUI();
+                    document.getElementById('scoreValue').innerText = `${storyCollected}/${storyGoal.count}`;
+                    addCoins(collectedThisStep * 10);
+                    if (storyCollected >= storyGoal.count) {
+                        // Уровень пройден
+                        addCoins(100);
+                        // Генерируем новое задание
+                        storyGoal = generateRandomGoal();
+                        storyCollected = 0;
+                        updateGoalUI();
+                        // Сбрасываем доску и продолжаем
+                        initBoard();
+                        saveStoryProgress();
+                        drawBoard();
+                        alert(`Новое задание: собрать ${storyGoal.count} ${storyGoal.name}`);
+                    }
+                }
+            }
+
+            function saveStoryProgress() {
+                localStorage.setItem('match3_story_goal_type', storyGoal.type);
+                localStorage.setItem('match3_story_goal_count', storyGoal.count);
+                localStorage.setItem('match3_story_goal_name', storyGoal.name);
+                localStorage.setItem('match3_story_collected', storyCollected);
+            }
+            function loadStoryProgress() {
+                const savedType = localStorage.getItem('match3_story_goal_type');
+                const savedCount = localStorage.getItem('match3_story_goal_count');
+                const savedName = localStorage.getItem('match3_story_goal_name');
+                const savedCollected = localStorage.getItem('match3_story_collected');
+                if (savedType !== null && savedCount !== null) {
+                    storyGoal = {
+                        type: parseInt(savedType),
+                        count: parseInt(savedCount),
+                        name: savedName || getItemNameByType(parseInt(savedType))
+                    };
+                    storyCollected = savedCollected ? parseInt(savedCollected) : 0;
+                } else {
+                    // Если нет сохранения, генерируем новое задание
+                    storyGoal = generateRandomGoal();
+                    storyCollected = 0;
+                }
+                updateGoalUI();
+            }
+
+            function saveGameState() {
+                localStorage.setItem('match3_board', JSON.stringify(board));
+                if (gameMode === "endless") {
+                    localStorage.setItem('match3_score', score);
+                }
+                localStorage.setItem('match3_mode', gameMode);
+                localStorage.setItem('match3_coins', coins);
+                if (gameMode === "story") {
+                    saveStoryProgress();
+                }
+                localStorage.setItem('match3_field_type', document.getElementById('fieldTypeSelect').value);
+            }
+            function loadGameState() {
+                const savedBoard = localStorage.getItem('match3_board');
+                const savedScore = localStorage.getItem('match3_score');
+                const savedMode = localStorage.getItem('match3_mode');
+                const savedCoins = localStorage.getItem('match3_coins');
+                const savedField = localStorage.getItem('match3_field_type');
+                if (savedField) {
+                    const select = document.getElementById('fieldTypeSelect');
+                    if (select) select.value = savedField;
+                    setFieldType(savedField);
+                }
+                if (savedCoins !== null) coins = parseInt(savedCoins);
+                if (savedBoard) {
+                    board = JSON.parse(savedBoard);
+                    if (savedMode === "story") {
+                        gameMode = "story";
+                        loadStoryProgress();
+                        document.getElementById('scoreValue').innerText = `${storyCollected}/${storyGoal.count}`;
+                    } else {
+                        gameMode = "endless";
+                        if (savedScore) score = parseInt(savedScore);
+                        document.getElementById('scoreValue').innerText = score;
+                    }
+                    drawBoard();
+                    updateCoinsUI();
+                    return true;
+                }
+                return false;
+            }
+
+            // ========== ИСПРАВЛЕННАЯ ФУНКЦИЯ startGame – МОНЕТЫ НЕ ОБНУЛЯЮТСЯ ==========
+            function startGame(mode) {
+                gameMode = mode;
+                // coins НЕ обнуляем — сохраняем общую валюту
+                if (mode === "story") {
+                    storyGoal = generateRandomGoal();
+                    storyCollected = 0;
+                    updateGoalUI();
+                    document.getElementById('scoreValue').innerText = `0/${storyGoal.count}`;
+                } else {
+                    score = 0;
+                    document.getElementById('scoreValue').innerText = "0";
+                    document.getElementById('goalBox').style.display = "none";
+                }
+                initBoard();
+                isProcessing = false;
                 drawBoard();
                 saveGameState();
             }
-        }
-        step();
-    }
 
-    function explodeBomb(row, col) {
-        if (board[row][col] !== BOMB_TYPE) return;
-        isProcessing = true;
-        if (sfxEnabled) playBombSound();
-        for (let r = 0; r < ROWS; r++)
-            for (let c = 0; c < COLS; c++)
-                board[r][c] = -1;
-        score += 1000;
-        document.getElementById('scoreValue').innerText = score;
-        for (let r = 0; r < ROWS; r++)
-            for (let c = 0; c < COLS; c++)
-                board[r][c] = Math.floor(Math.random() * TYPES);
-        let changes = [];
-        for (let r = 0; r < ROWS; r++) {
-            for (let c = 0; c < COLS; c++) {
-                changes.push({
-                    fromRow: -1,
-                    fromCol: c,
-                    toRow: r,
-                    toCol: c,
-                    type: board[r][c]
-                });
+            function resizeCanvas() {
+                const container = document.getElementById('gameContainer');
+                const maxWidth = Math.min(container.clientWidth - 40, 500);
+                const maxSize = Math.min(maxWidth, 500);
+                tileSize = Math.floor(maxSize / Math.max(rows, cols));
+                canvas.width = cols * tileSize;
+                canvas.height = rows * tileSize;
+                drawBoard();
             }
-        }
-        animateFall(changes, () => {
-            clearMatchesAndRefill();
-            drawBoard();
-            selectedRow = -1; selectedCol = -1;
-            isProcessing = false;
-            saveGameState();
-        });
-    }
+            window.addEventListener('resize', () => resizeCanvas());
 
-    // ========== СОХРАНЕНИЕ И ЗАГРУЗКА ==========
-    function saveGameState() {
-        localStorage.setItem('match3_board', JSON.stringify(board));
-        localStorage.setItem('match3_score', score);
-    }
-    function loadGameState() {
-        const savedBoard = localStorage.getItem('match3_board');
-        const savedScore = localStorage.getItem('match3_score');
-        if (savedBoard) {
-            board = JSON.parse(savedBoard);
-            score = parseInt(savedScore) || 0;
-            document.getElementById('scoreValue').innerText = score;
-            drawBoard();
-            return true;
-        }
-        return false;
-    }
-    function saveImagesToLocalStorage() {
-        const imagesData = [];
-        for (let i = 0; i < TYPES; i++) {
-            if (tileImages[i] && tileImages[i].src && tileImages[i].src.startsWith('data:')) {
-                imagesData.push(tileImages[i].src);
-            } else {
-                imagesData.push(null);
+            // ========== ОСТАЛЬНЫЕ ИГРОВЫЕ ФУНКЦИИ (из второго кода, без изменений) ==========
+            function getMatchesInfo() {
+                let matchesSet = new Set();
+                let longMatches = [];
+                for (let r = 0; r < rows; r++) {
+                    let len = 1;
+                    for (let c = 1; c <= cols; c++) {
+                        if (c < cols && !isWall(r,c) && !isWall(r,c-1) && board[r][c] === board[r][c-1] && board[r][c] >= 0) {
+                            len++;
+                        } else {
+                            if (len >= 3) {
+                                if (len >= 4) {
+                                    const centerCol = c - Math.floor(len/2) - 1;
+                                    longMatches.push({ row: r, col: centerCol, length: len, isHorizontal: true });
+                                } else {
+                                    for (let i = c - len; i < c; i++) {
+                                        if (!isWall(r,i)) matchesSet.add(`${r},${i}`);
+                                    }
+                                }
+                            }
+                            len = 1;
+                        }
+                    }
+                }
+                for (let c = 0; c < cols; c++) {
+                    let len = 1;
+                    for (let r = 1; r <= rows; r++) {
+                        if (r < rows && !isWall(r,c) && !isWall(r-1,c) && board[r][c] === board[r-1][c] && board[r][c] >= 0) {
+                            len++;
+                        } else {
+                            if (len >= 3) {
+                                if (len >= 4) {
+                                    const centerRow = r - Math.floor(len/2) - 1;
+                                    longMatches.push({ row: centerRow, col: c, length: len, isHorizontal: false });
+                                } else {
+                                    for (let i = r - len; i < r; i++) {
+                                        if (!isWall(i,c)) matchesSet.add(`${i},${c}`);
+                                    }
+                                }
+                            }
+                            len = 1;
+                        }
+                    }
+                }
+                return { matchesSet, longMatches };
             }
-        }
-        localStorage.setItem('match3_images', JSON.stringify(imagesData));
-        if (bombImage && bombImage.src && bombImage.src.startsWith('data:')) {
-            localStorage.setItem('match3_bomb_image', bombImage.src);
-        } else {
-            localStorage.removeItem('match3_bomb_image');
-        }
-    }
-    function loadImagesFromLocalStorage() {
-        const savedImages = localStorage.getItem('match3_images');
-        if (savedImages) {
-            const imagesData = JSON.parse(savedImages);
-            for (let i = 0; i < TYPES; i++) {
-                if (imagesData[i]) {
-                    const img = new Image();
-                    img.src = imagesData[i];
-                    tileImages[i] = img;
-                } else {
-                    tileImages[i] = null;
+
+            function hasMatches() {
+                const { matchesSet, longMatches } = getMatchesInfo();
+                return matchesSet.size > 0 || longMatches.length > 0;
+            }
+
+            function clearMatchesWithoutScore() {
+                while (true) {
+                    const { matchesSet, longMatches } = getMatchesInfo();
+                    if (matchesSet.size === 0 && longMatches.length === 0) break;
+                    for (const coord of matchesSet) {
+                        let [r, c] = coord.split(',').map(Number);
+                        if (board[r][c] >= 0) board[r][c] = -1;
+                    }
+                    for (const lm of longMatches) {
+                        const { row, col, length, isHorizontal } = lm;
+                        if (isHorizontal) {
+                            for (let i = 0; i < length; i++) {
+                                const cc = col - Math.floor(length/2) + i;
+                                if (cc >= 0 && cc < cols && board[row][cc] >= 0) board[row][cc] = -1;
+                            }
+                        } else {
+                            for (let i = 0; i < length; i++) {
+                                const rr = row - Math.floor(length/2) + i;
+                                if (rr >= 0 && rr < rows && board[rr][col] >= 0) board[rr][col] = -1;
+                            }
+                        }
+                    }
+                    applyGravityAndRefill();
                 }
             }
-        }
-        const savedBomb = localStorage.getItem('match3_bomb_image');
-        if (savedBomb) {
-            const bombImg = new Image();
-            bombImg.src = savedBomb;
-            bombImage = bombImg;
-        }
-    }
-    function loadAssetsFromInputs() {
-        for (let i = 0; i < TYPES; i++) {
-            const input = document.getElementById(`asset${i}`);
-            if (input.files && input.files[0]) {
-                const file = input.files[0];
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.src = e.target.result;
-                    img.onload = () => {
-                        tileImages[i] = img;
+
+            function removeMatchesAndAddScore() {
+                const { matchesSet, longMatches } = getMatchesInfo();
+                if (matchesSet.size === 0 && longMatches.length === 0) return 0;
+                let removedCount = 0;
+                let removedTypes = [];
+                for (const lm of longMatches) {
+                    const { row, col, length } = lm;
+                    if (board[row][col] !== BOMB_TYPE) {
+                        board[row][col] = BOMB_TYPE;
+                        if (gameMode === "endless") {
+                            score += 100 * length;
+                            document.getElementById('scoreValue').innerText = score;
+                            addCoins(100 * length);
+                        }
+                        if (sfxEnabled) playMatchSound();
+                    }
+                    if (lm.isHorizontal) {
+                        for (let i = 0; i < length; i++) {
+                            const cc = col - Math.floor(length/2) + i;
+                            if (cc >= 0 && cc < cols && board[row][cc] !== BOMB_TYPE && board[row][cc] >= 0) {
+                                removedTypes.push(board[row][cc]);
+                                board[row][cc] = -1;
+                                removedCount++;
+                            }
+                        }
+                    } else {
+                        for (let i = 0; i < length; i++) {
+                            const rr = row - Math.floor(length/2) + i;
+                            if (rr >= 0 && rr < rows && board[rr][col] !== BOMB_TYPE && board[rr][col] >= 0) {
+                                removedTypes.push(board[rr][col]);
+                                board[rr][col] = -1;
+                                removedCount++;
+                            }
+                        }
+                    }
+                }
+                for (const coord of matchesSet) {
+                    let [r, c] = coord.split(',').map(Number);
+                    if (board[r][c] !== -1 && board[r][c] !== BOMB_TYPE) {
+                        removedTypes.push(board[r][c]);
+                        board[r][c] = -1;
+                        removedCount++;
+                    }
+                }
+                if (gameMode === "endless") {
+                    score += removedCount * 10;
+                    document.getElementById('scoreValue').innerText = score;
+                    addCoins(removedCount * 10);
+                } else {
+                    countCollectedFromMatches(removedTypes);
+                }
+                if (sfxEnabled && removedCount > 0) playMatchSound();
+                return removedCount;
+            }
+
+            function applyGravityAndRefill() {
+                for (let c = 0; c < cols; c++) {
+                    let column = [];
+                    for (let r = rows-1; r >= 0; r--) {
+                        if (board[r][c] !== -1 && board[r][c] !== BOMB_TYPE && !isWall(r,c)) column.push(board[r][c]);
+                        else if (board[r][c] === BOMB_TYPE) column.push(BOMB_TYPE);
+                        else if (isWall(r,c)) column.push(WALL_TYPE);
+                    }
+                    while (column.length < rows) column.push(Math.floor(Math.random() * TYPES));
+                    column.reverse();
+                    for (let r = 0; r < rows; r++) board[r][c] = column[r];
+                    // восстанавливаем стены
+                    for (let w of getFieldConfig(document.getElementById('fieldTypeSelect').value).walls) {
+                        if (w[0] < rows && w[1] === c) board[w[0]][w[1]] = WALL_TYPE;
+                    }
+                }
+            }
+
+            function clearMatchesAndRefill() {
+                let anyRemoved = false;
+                while (true) {
+                    let removed = removeMatchesAndAddScore();
+                    if (removed === 0) break;
+                    anyRemoved = true;
+                    applyGravityAndRefill();
+                }
+                if (anyRemoved) drawBoard();
+                return anyRemoved;
+            }
+
+            function hasValidMoves() {
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        if (board[r][c] === BOMB_TYPE || isWall(r,c)) continue;
+                        if (c+1 < cols && !isWall(r,c+1) && board[r][c+1] !== BOMB_TYPE) {
+                            swapCells(r,c, r,c+1);
+                            let has = hasMatches();
+                            swapCells(r,c, r,c+1);
+                            if (has) return true;
+                        }
+                        if (r+1 < rows && !isWall(r+1,c) && board[r+1][c] !== BOMB_TYPE) {
+                            swapCells(r,c, r+1,c);
+                            let has = hasMatches();
+                            swapCells(r,c, r+1,c);
+                            if (has) return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            function swapCells(r1,c1, r2,c2) {
+                let temp = board[r1][c1];
+                board[r1][c1] = board[r2][c2];
+                board[r2][c2] = temp;
+            }
+
+            function shuffleBoard() {
+                if (isProcessing) return;
+                isProcessing = true;
+                let attempts = 0;
+                let success = false;
+                while (attempts < 50 && !success) {
+                    let newBoard = Array(rows).fill().map(() => Array(cols).fill(0));
+                    for (let r = 0; r < rows; r++)
+                        for (let c = 0; c < cols; c++)
+                            newBoard[r][c] = Math.floor(Math.random() * TYPES);
+                    let oldBoard = board;
+                    board = newBoard;
+                    clearMatchesWithoutScore();
+                    if (hasValidMoves()) {
+                        success = true;
+                    } else {
+                        board = oldBoard;
+                    }
+                    attempts++;
+                }
+                if (!success) {
+                    for (let r = 0; r < rows; r++)
+                        for (let c = 0; c < cols; c++)
+                            if (board[r][c] !== BOMB_TYPE && !isWall(r,c)) board[r][c] = Math.floor(Math.random() * TYPES);
+                            else if (board[r][c] === BOMB_TYPE) board[r][c] = Math.floor(Math.random() * TYPES);
+                    clearMatchesAndRefill();
+                }
+                drawBoard();
+                isProcessing = false;
+                saveGameState();
+            }
+
+            function initBoard() {
+                const fieldType = document.getElementById('fieldTypeSelect').value;
+                const cfg = getFieldConfig(fieldType);
+                rows = cfg.rows;
+                cols = cfg.cols;
+                board = Array(rows).fill().map(() => Array(cols).fill(0));
+                for (let r = 0; r < rows; r++)
+                    for (let c = 0; c < cols; c++)
+                        board[r][c] = Math.floor(Math.random() * TYPES);
+                for (let w of cfg.walls) {
+                    if (w[0] < rows && w[1] < cols) board[w[0]][w[1]] = WALL_TYPE;
+                }
+                clearMatchesAndRefill();
+            }
+
+            // ========== АНИМАЦИИ ==========
+            let animationFrame = null;
+            let activeAnimations = { swap: null, falling: [] };
+            let pendingAction = null;
+
+            function startAnimationLoop() {
+                if (animationFrame) cancelAnimationFrame(animationFrame);
+                function update() {
+                    let anyActive = false;
+                    if (activeAnimations.swap) {
+                        anyActive = true;
+                        let s = activeAnimations.swap;
+                        s.progress += 16 / s.duration;
+                        if (s.progress >= 1) {
+                            activeAnimations.swap = null;
+                            if (s.onComplete) s.onComplete();
+                        } else {
+                            drawBoard();
+                        }
+                    }
+                    if (activeAnimations.falling.length > 0) {
+                        anyActive = true;
+                        let allFinished = true;
+                        for (let f of activeAnimations.falling) {
+                            f.progress += 16 / f.duration;
+                            if (f.progress < 1) allFinished = false;
+                        }
                         drawBoard();
-                        saveImagesToLocalStorage();
-                    };
-                    tileImages[i] = img;
-                };
-                reader.readAsDataURL(file);
+                        if (allFinished) {
+                            activeAnimations.falling = [];
+                            if (pendingAction) {
+                                let action = pendingAction;
+                                pendingAction = null;
+                                action();
+                            } else {
+                                isProcessing = false;
+                            }
+                            drawBoard();
+                        }
+                    }
+                    if (anyActive) {
+                        animationFrame = requestAnimationFrame(update);
+                    } else {
+                        animationFrame = null;
+                    }
+                }
+                update();
             }
-        }
-        const bombInput = document.getElementById('bombAsset');
-        if (bombInput.files && bombInput.files[0]) {
-            const file = bombInput.files[0];
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.src = e.target.result;
-                img.onload = () => {
-                    bombImage = img;
+
+            function drawTile(r, c, x, y, type, isHighlight = false) {
+                if (type === -1) {
+                    ctx.fillStyle = "#aa8866";
+                    ctx.fillRect(x, y, tileSize-1, tileSize-1);
+                    return;
+                }
+                if (type === WALL_TYPE) {
+                    ctx.fillStyle = "#4a4a5a";
+                    ctx.fillRect(x, y, tileSize-1, tileSize-1);
+                    ctx.fillStyle = "#2a2a3a";
+                    for (let i = 0; i < 3; i++) {
+                        ctx.fillRect(x + tileSize * 0.2 + i*3, y + tileSize * 0.3, tileSize*0.6, 2);
+                        ctx.fillRect(x + tileSize * 0.3, y + tileSize * 0.2 + i*3, 2, tileSize*0.6);
+                    }
+                    return;
+                }
+                if (type === BOMB_TYPE) {
+                    if (bombImage && bombImage.complete && bombImage.naturalWidth > 0) {
+                        ctx.drawImage(bombImage, x, y, tileSize, tileSize);
+                    } else {
+                        ctx.fillStyle = "#666666";
+                        ctx.fillRect(x, y, tileSize-1, tileSize-1);
+                        ctx.fillStyle = "#fff3e0";
+                        ctx.font = `${Math.floor(tileSize * 0.6)}px "Segoe UI Emoji"`;
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+                        ctx.fillText("💣", x + tileSize/2, y + tileSize/2);
+                    }
+                } else {
+                    if (tileImages[type] && tileImages[type].complete && tileImages[type].naturalWidth > 0) {
+                        ctx.drawImage(tileImages[type], x, y, tileSize, tileSize);
+                    } else {
+                        ctx.fillStyle = defaultColors[type % defaultColors.length];
+                        ctx.fillRect(x, y, tileSize-1, tileSize-1);
+                        ctx.fillStyle = "#fff3e0";
+                        ctx.font = `${Math.floor(tileSize * 0.6)}px "Segoe UI Emoji"`;
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+                        ctx.fillText(defaultEmojis[type % defaultEmojis.length], x + tileSize/2, y + tileSize/2);
+                    }
+                }
+                ctx.strokeStyle = "#b87c4f";
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(x, y, tileSize, tileSize);
+                if (isHighlight) {
+                    ctx.save();
+                    ctx.shadowBlur = 6;
+                    ctx.shadowColor = "#ffcc44";
+                    ctx.strokeStyle = "#ffaa33";
+                    ctx.lineWidth = 4;
+                    ctx.strokeRect(x+2, y+2, tileSize-5, tileSize-5);
+                    ctx.restore();
+                }
+            }
+
+            function drawBoard() {
+                if (activeAnimations.swap) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            let x = c * tileSize;
+                            let y = r * tileSize;
+                            let type = board[r][c];
+                            let offsetX = 0, offsetY = 0;
+                            if (activeAnimations.swap) {
+                                let s = activeAnimations.swap;
+                                if ((r === s.row1 && c === s.col1) || (r === s.row2 && c === s.col2)) {
+                                    let targetRow, targetCol;
+                                    if (r === s.row1 && c === s.col1) {
+                                        targetRow = s.row2;
+                                        targetCol = s.col2;
+                                    } else {
+                                        targetRow = s.row1;
+                                        targetCol = s.col1;
+                                    }
+                                    let t = s.progress;
+                                    let startX = x;
+                                    let startY = y;
+                                    let endX = targetCol * tileSize;
+                                    let endY = targetRow * tileSize;
+                                    offsetX = (endX - startX) * t;
+                                    offsetY = (endY - startY) * t;
+                                }
+                            }
+                            let highlight = (dragActive && ((r === dragStartRow && c === dragStartCol) || (r === dragTargetRow && c === dragTargetCol))) ||
+                                            hintCells.some(h => h.row === r && h.col === c);
+                            drawTile(r, c, x + offsetX, y + offsetY, type, highlight);
+                        }
+                    }
+                    return;
+                }
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        let x = c * tileSize;
+                        let y = r * tileSize;
+                        let type = board[r][c];
+                        let offsetY = 0;
+                        for (let f of activeAnimations.falling) {
+                            if (f.toRow === r && f.toCol === c && f.fromRow !== undefined) {
+                                let t = f.progress;
+                                let startY = f.fromRow * tileSize;
+                                let endY = r * tileSize;
+                                offsetY = (endY - startY) * t;
+                                type = f.type;
+                                break;
+                            }
+                        }
+                        let highlight = (dragActive && ((r === dragStartRow && c === dragStartCol) || (r === dragTargetRow && c === dragTargetCol))) ||
+                                        hintCells.some(h => h.row === r && h.col === c);
+                        drawTile(r, c, x, y + offsetY, type, highlight);
+                    }
+                }
+            }
+
+            function animateSwap(r1,c1, r2,c2, onComplete) {
+                if (activeAnimations.swap) return;
+                activeAnimations.swap = {
+                    row1: r1, col1: c1,
+                    row2: r2, col2: c2,
+                    progress: 0,
+                    duration: 200,
+                    onComplete: () => {
+                        swapCells(r1, c1, r2, c2);
+                        drawBoard();
+                        if (onComplete) onComplete();
+                    }
+                };
+                startAnimationLoop();
+                drawBoard();
+            }
+
+            function animateFall(changes, onComplete) {
+                activeAnimations.falling = changes.map(c => ({
+                    fromRow: c.fromRow,
+                    fromCol: c.fromCol,
+                    toRow: c.toRow,
+                    toCol: c.toCol,
+                    type: c.type,
+                    progress: 0,
+                    duration: 150
+                }));
+                pendingAction = onComplete;
+                startAnimationLoop();
+                drawBoard();
+            }
+
+            function trySwap(r1,c1, r2,c2) {
+                if (isProcessing) return false;
+                if (Math.abs(r1-r2) + Math.abs(c1-c2) !== 1) return false;
+                isProcessing = true;
+                animateSwap(r1, c1, r2, c2, () => {
+                    if (hasMatches()) {
+                        processMatchesAndCascade();
+                    } else {
+                        animateSwap(r2, c2, r1, c1, () => {
+                            isProcessing = false;
+                            drawBoard();
+                        });
+                    }
+                });
+                return true;
+            }
+
+            function processMatchesAndCascade() {
+                function step() {
+                    let removed = removeMatchesAndAddScore();
+                    if (removed > 0) {
+                        let changes = [];
+                        let oldBoard = board.map(row => [...row]);
+                        applyGravityAndRefill();
+                        for (let c = 0; c < cols; c++) {
+                            let oldCol = [];
+                            for (let r = 0; r < rows; r++) oldCol.push(oldBoard[r][c]);
+                            let newCol = [];
+                            for (let r = 0; r < rows; r++) newCol.push(board[r][c]);
+                            for (let r = 0; r < rows; r++) {
+                                if (oldCol[r] !== newCol[r] && oldCol[r] !== -1 && oldCol[r] !== BOMB_TYPE && !isWall(r,c)) {
+                                    for (let rr = r+1; rr < rows; rr++) {
+                                        if (newCol[rr] === oldCol[r]) {
+                                            changes.push({
+                                                fromRow: r,
+                                                fromCol: c,
+                                                toRow: rr,
+                                                toCol: c,
+                                                type: oldCol[r]
+                                            });
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (changes.length > 0) {
+                            animateFall(changes, () => {
+                                drawBoard();
+                                step();
+                            });
+                        } else {
+                            drawBoard();
+                            step();
+                        }
+                    } else {
+                        if (!hasValidMoves()) {
+                            shuffleBoard();
+                        } else {
+                            isProcessing = false;
+                        }
+                        drawBoard();
+                        saveGameState();
+                    }
+                }
+                step();
+            }
+
+            function explodeBomb(row, col) {
+                if (board[row][col] !== BOMB_TYPE) return;
+                isProcessing = true;
+                if (sfxEnabled) playBombSound();
+                for (let r = 0; r < rows; r++)
+                    for (let c = 0; c < cols; c++)
+                        if (!isWall(r,c)) board[r][c] = -1;
+                if (gameMode === "endless") {
+                    score += 1000;
+                    document.getElementById('scoreValue').innerText = score;
+                    addCoins(1000);
+                }
+                for (let r = 0; r < rows; r++)
+                    for (let c = 0; c < cols; c++)
+                        if (!isWall(r,c)) board[r][c] = Math.floor(Math.random() * TYPES);
+                let changes = [];
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        if (!isWall(r,c)) {
+                            changes.push({
+                                fromRow: -1,
+                                fromCol: c,
+                                toRow: r,
+                                toCol: c,
+                                type: board[r][c]
+                            });
+                        }
+                    }
+                }
+                animateFall(changes, () => {
+                    clearMatchesAndRefill();
                     drawBoard();
-                    saveImagesToLocalStorage();
-                };
-                bombImage = img;
-            };
-            reader.readAsDataURL(file);
-        }
-    }
-
-    // ========== ОБРАБОТЧИКИ КЛИКОВ ==========
-    function getTileFromClick(clientX, clientY) {
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        let canvasX = (clientX - rect.left) * scaleX;
-        let canvasY = (clientY - rect.top) * scaleY;
-        let col = Math.floor(canvasX / tileSize);
-        let row = Math.floor(canvasY / tileSize);
-        if (row >= 0 && row < ROWS && col >= 0 && col < COLS) return { row, col };
-        return null;
-    }
-    function handleCanvasClick(e) {
-        if (isProcessing) return;
-        e.preventDefault();
-        let clientX, clientY;
-        if (e.touches) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
-        else { clientX = e.clientX; clientY = e.clientY; }
-        let tile = getTileFromClick(clientX, clientY);
-        if (!tile) return;
-        const { row, col } = tile;
-        if (board[row][col] === BOMB_TYPE) {
-            explodeBomb(row, col);
-            return;
-        }
-        if (selectedRow === -1) {
-            selectedRow = row;
-            selectedCol = col;
-            drawBoard();
-        } else {
-            let r1 = selectedRow, c1 = selectedCol;
-            let r2 = row, c2 = col;
-            if ((Math.abs(r1 - r2) + Math.abs(c1 - c2)) === 1) {
-                trySwap(r1, c1, r2, c2);
+                    isProcessing = false;
+                    saveGameState();
+                });
             }
-            selectedRow = -1;
-            selectedCol = -1;
-            drawBoard();
-        }
-    }
-    function resetGame() {
-        score = 0;
-        document.getElementById('scoreValue').innerText = "0";
-        initBoard();
-        selectedRow = -1;
-        isProcessing = false;
-        drawBoard();
-        saveGameState();
-    }
 
-    // ========== МЕНЮ И НАСТРОЙКИ ==========
-    const mainMenu = document.getElementById('mainMenu');
-    const gameContainer = document.getElementById('gameContainer');
-    const playBtn = document.getElementById('playBtn');
-    const settingsBtn = document.getElementById('settingsBtn');
-    const menuReturnBtn = document.getElementById('menuReturnBtn');
-    const gameSettingsBtn = document.getElementById('gameSettingsBtn');
-    const shuffleBtn = document.getElementById('shuffleBtn');
-    const settingsModal = document.getElementById('settingsModal');
-    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-    const musicToggle = document.getElementById('musicToggle');
-    const sfxToggle = document.getElementById('sfxToggle');
-    const volumeSlider = document.getElementById('volumeSlider');
-    const customMusicInput = document.getElementById('customMusic');
-    const customMatchSoundInput = document.getElementById('customMatchSound');
+            // ========== ЗАГРУЗКА ИЗОБРАЖЕНИЙ И АССЕТОВ (из второго кода) ==========
+            function saveImagesToLocalStorage() {
+                const imagesData = [];
+                for (let i = 0; i < TYPES; i++) {
+                    if (tileImages[i] && tileImages[i].src && tileImages[i].src.startsWith('data:')) {
+                        imagesData.push(tileImages[i].src);
+                    } else {
+                        imagesData.push(null);
+                    }
+                }
+                localStorage.setItem('match3_images', JSON.stringify(imagesData));
+                if (bombImage && bombImage.src && bombImage.src.startsWith('data:')) {
+                    localStorage.setItem('match3_bomb_image', bombImage.src);
+                } else {
+                    localStorage.removeItem('match3_bomb_image');
+                }
+            }
+            function loadImagesFromLocalStorage() {
+                const savedImages = localStorage.getItem('match3_images');
+                if (savedImages) {
+                    const imagesData = JSON.parse(savedImages);
+                    for (let i = 0; i < TYPES; i++) {
+                        if (imagesData[i]) {
+                            const img = new Image();
+                            img.src = imagesData[i];
+                            tileImages[i] = img;
+                        } else {
+                            tileImages[i] = null;
+                        }
+                    }
+                }
+                const savedBomb = localStorage.getItem('match3_bomb_image');
+                if (savedBomb) {
+                    const bombImg = new Image();
+                    bombImg.src = savedBomb;
+                    bombImage = bombImg;
+                }
+            }
+            function loadAssetsFromInputs() {
+                for (let i = 0; i < TYPES; i++) {
+                    const input = document.getElementById(`asset${i}`);
+                    if (input.files && input.files[0]) {
+                        const file = input.files[0];
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const img = new Image();
+                            img.src = e.target.result;
+                            img.onload = () => {
+                                tileImages[i] = img;
+                                drawBoard();
+                                saveImagesToLocalStorage();
+                            };
+                            tileImages[i] = img;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                }
+                const bombInput = document.getElementById('bombAsset');
+                if (bombInput.files && bombInput.files[0]) {
+                    const file = bombInput.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.src = e.target.result;
+                        img.onload = () => {
+                            bombImage = img;
+                            drawBoard();
+                            saveImagesToLocalStorage();
+                        };
+                        bombImage = img;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
 
-    function handleCustomMusic(file) {
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const audio = new Audio(e.target.result);
-            audio.loop = true;
-            audio.volume = musicVolume;
-            customMusicAudio = audio;
-            saveAudioSettings();
-            if (musicEnabled) startMusic();
-        };
-        reader.readAsDataURL(file);
-    }
-    function handleCustomMatchSound(file) {
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const audio = new Audio(e.target.result);
-            audio.volume = musicVolume;
-            customMatchSoundAudio = audio;
-            saveAudioSettings();
-        };
-        reader.readAsDataURL(file);
-    }
-    customMusicInput.addEventListener('change', (e) => {
-        if (e.target.files.length) handleCustomMusic(e.target.files[0]);
-    });
-    customMatchSoundInput.addEventListener('change', (e) => {
-        if (e.target.files.length) handleCustomMatchSound(e.target.files[0]);
-    });
+            // ========== ОБРАБОТЧИКИ ДЛЯ DRAG-AND-DROP (из второго кода) ==========
+            function getTileFromPoint(clientX, clientY) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                let canvasX = (clientX - rect.left) * scaleX;
+                let canvasY = (clientY - rect.top) * scaleY;
+                let col = Math.floor(canvasX / tileSize);
+                let row = Math.floor(canvasY / tileSize);
+                if (row >= 0 && row < rows && col >= 0 && col < cols) return { row, col };
+                return null;
+            }
 
-    function showGame() {
-        if (!isAudioInit) initAudio();
-        mainMenu.style.display = 'none';
-        gameContainer.classList.add('visible');
-        resizeCanvas();
-        if (!loadGameState()) resetGame();
-    }
-    function showMenu() {
-        gameContainer.classList.remove('visible');
-        mainMenu.style.display = 'flex';
-        if (musicEnabled && audioCtx) { stopMusic(); startMusic(); }
-    }
+            function onDragStart(e) {
+                if (isProcessing) return;
+                e.preventDefault();
+                let clientX, clientY;
+                if (e.touches) {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                } else {
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                }
+                let tile = getTileFromPoint(clientX, clientY);
+                if (!tile) return;
+                if (board[tile.row][tile.col] === BOMB_TYPE) {
+                    explodeBomb(tile.row, tile.col);
+                    return;
+                }
+                if (isWall(tile.row, tile.col)) return;
+                dragActive = true;
+                dragStartRow = tile.row;
+                dragStartCol = tile.col;
+                dragTargetRow = tile.row;
+                dragTargetCol = tile.col;
+                drawBoard();
+            }
 
-    playBtn.addEventListener('click', showGame);
-    menuReturnBtn.addEventListener('click', showMenu);
-    shuffleBtn.addEventListener('click', () => { if (gameContainer.classList.contains('visible')) shuffleBoard(); });
-    settingsBtn.addEventListener('click', () => { if (!isAudioInit) initAudio(); settingsModal.style.display = 'flex'; });
-    gameSettingsBtn.addEventListener('click', () => { if (!isAudioInit) initAudio(); settingsModal.style.display = 'flex'; });
-    closeSettingsBtn.addEventListener('click', () => settingsModal.style.display = 'none');
-    settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) settingsModal.style.display = 'none'; });
+            function onDragMove(e) {
+                if (!dragActive) return;
+                e.preventDefault();
+                let clientX, clientY;
+                if (e.touches) {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                } else {
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                }
+                let tile = getTileFromPoint(clientX, clientY);
+                if (tile) {
+                    dragTargetRow = tile.row;
+                    dragTargetCol = tile.col;
+                } else {
+                    dragTargetRow = -1;
+                    dragTargetCol = -1;
+                }
+                drawBoard();
+            }
 
-    musicToggle.addEventListener('change', (e) => setMusicEnabled(e.target.checked));
-    sfxToggle.addEventListener('change', (e) => setSfxEnabled(e.target.checked));
-    volumeSlider.addEventListener('input', (e) => setMusicVolume(e.target.value / 100));
+            function onDragEnd(e) {
+                if (!dragActive) return;
+                e.preventDefault();
+                let clientX, clientY;
+                if (e.changedTouches) {
+                    clientX = e.changedTouches[0].clientX;
+                    clientY = e.changedTouches[0].clientY;
+                } else {
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                }
+                let tile = getTileFromPoint(clientX, clientY);
+                if (tile && dragStartRow !== -1 && dragStartCol !== -1) {
+                    if (dragTargetRow === -1 || dragTargetCol === -1) {
+                        dragTargetRow = tile.row;
+                        dragTargetCol = tile.col;
+                    }
+                    if (Math.abs(dragStartRow - dragTargetRow) + Math.abs(dragStartCol - dragTargetCol) === 1) {
+                        trySwap(dragStartRow, dragStartCol, dragTargetRow, dragTargetCol);
+                    }
+                }
+                dragActive = false;
+                dragStartRow = -1; dragStartCol = -1;
+                dragTargetRow = -1; dragTargetCol = -1;
+                drawBoard();
+            }
 
-    loadAudioSettings();
-    setMusicVolume(musicVolume);
-    setMusicEnabled(musicEnabled);
-    setSfxEnabled(sfxEnabled);
+            function resetGame() {
+                if (gameMode === "story") {
+                    storyGoal = generateRandomGoal();
+                    storyCollected = 0;
+                    updateGoalUI();
+                    document.getElementById('scoreValue').innerText = `0/${storyGoal.count}`;
+                } else {
+                    score = 0;
+                    document.getElementById('scoreValue').innerText = "0";
+                }
+                coins = 0;  // полный сброс монет
+                updateCoinsUI();
+                initBoard();
+                isProcessing = false;
+                drawBoard();
+                saveGameState();
+            }
 
-    function enableAudioOnUserInteraction() {
-        initAudio();
-        document.removeEventListener('click', enableAudioOnUserInteraction);
-        document.removeEventListener('touchstart', enableAudioOnUserInteraction);
-    }
-    document.addEventListener('click', enableAudioOnUserInteraction);
-    document.addEventListener('touchstart', enableAudioOnUserInteraction);
+            // ========== МЕНЮ И НАСТРОЙКИ (из второго кода) ==========
+            const mainMenu = document.getElementById('mainMenu');
+            const modeSelectDiv = document.getElementById('modeSelect');
+            const gameContainer = document.getElementById('gameContainer');
+            const playBtn = document.getElementById('playBtn');
+            const settingsBtn = document.getElementById('settingsBtn');
+            const endlessModeBtn = document.getElementById('endlessModeBtn');
+            const storyModeBtn = document.getElementById('storyModeBtn');
+            const cancelModeBtn = document.getElementById('cancelModeBtn');
+            const menuReturnBtn = document.getElementById('menuReturnBtn');
+            const gameSettingsBtn = document.getElementById('gameSettingsBtn');
+            const shopBtn = document.getElementById('shopBtn');
+            const settingsModal = document.getElementById('settingsModal');
+            const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+            const musicToggle = document.getElementById('musicToggle');
+            const sfxToggle = document.getElementById('sfxToggle');
+            const volumeSlider = document.getElementById('volumeSlider');
+            const customMusicInput = document.getElementById('customMusic');
+            const customMatchSoundInput = document.getElementById('customMatchSound');
 
-    for (let i = 0; i < TYPES; i++) {
-        const input = document.getElementById(`asset${i}`);
-        if (input) input.addEventListener('change', loadAssetsFromInputs);
-    }
-    const bombInput = document.getElementById('bombAsset');
-    if (bombInput) bombInput.addEventListener('change', loadAssetsFromInputs);
+            const shopModal = document.getElementById('shopModal');
+            const closeShopBtn = document.getElementById('closeShopBtn');
+            const buyBombBtn = document.getElementById('buyBombBtn');
+            const buyShuffleBtn = document.getElementById('buyShuffleBtn');
+            const buyHintBtn = document.getElementById('buyHintBtn');
+            const fieldTypeSelect = document.getElementById('fieldTypeSelect');
 
-    loadImagesFromLocalStorage();
+            function handleCustomMusic(file) { /* как было */ }
+            function handleCustomMatchSound(file) { /* как было */ }
+            customMusicInput.addEventListener('change', (e) => { if (e.target.files.length) handleCustomMusic(e.target.files[0]); });
+            customMatchSoundInput.addEventListener('change', (e) => { if (e.target.files.length) handleCustomMatchSound(e.target.files[0]); });
 
-    if (!loadGameState()) {
-        initBoard();
-        drawBoard();
-        saveGameState();
-    } else {
-        drawBoard();
-    }
+            function showGameWithMode(mode) {
+                if (!isAudioInit) initAudio();
+                modeSelectDiv.style.display = 'none';
+                mainMenu.style.display = 'none';
+                gameContainer.classList.add('visible');
+                resizeCanvas();
+                startGame(mode);
+            }
 
-    canvas.addEventListener('click', handleCanvasClick);
-    canvas.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        const touch = e.touches[0];
-        handleCanvasClick({ clientX: touch.clientX, clientY: touch.clientY });
-    }, { passive: false });
+            playBtn.addEventListener('click', () => {
+                modeSelectDiv.style.display = 'flex';
+            });
+            endlessModeBtn.addEventListener('click', () => showGameWithMode('endless'));
+            storyModeBtn.addEventListener('click', () => showGameWithMode('story'));
+            cancelModeBtn.addEventListener('click', () => {
+                modeSelectDiv.style.display = 'none';
+            });
 
-    mainMenu.style.display = 'flex';
-    gameContainer.classList.remove('visible');
-})();
-</script>
+            menuReturnBtn.addEventListener('click', showMenu);
+            shopBtn.addEventListener('click', () => {
+                if (gameContainer.classList.contains('visible')) {
+                    updateCoinsUI();
+                    shopModal.style.display = 'flex';
+                }
+            });
+            closeShopBtn.addEventListener('click', () => shopModal.style.display = 'none');
+            buyBombBtn.addEventListener('click', () => { buyBomb(); shopModal.style.display = 'none'; });
+            buyShuffleBtn.addEventListener('click', () => { buyShuffle(); shopModal.style.display = 'none'; });
+            buyHintBtn.addEventListener('click', () => { buyHint(); shopModal.style.display = 'none'; });
+
+            settingsBtn.addEventListener('click', () => { if (!isAudioInit) initAudio(); settingsModal.style.display = 'flex'; });
+            gameSettingsBtn.addEventListener('click', () => { if (!isAudioInit) initAudio(); settingsModal.style.display = 'flex'; });
+            closeSettingsBtn.addEventListener('click', () => settingsModal.style.display = 'none');
+            settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) settingsModal.style.display = 'none'; });
+            shopModal.addEventListener('click', (e) => { if (e.target === shopModal) shopModal.style.display = 'none'; });
+
+            musicToggle.addEventListener('change', (e) => setMusicEnabled(e.target.checked));
+            sfxToggle.addEventListener('change', (e) => setSfxEnabled(e.target.checked));
+            volumeSlider.addEventListener('input', (e) => setMusicVolume(e.target.value / 100));
+
+            fieldTypeSelect.addEventListener('change', (e) => {
+                if (confirm('Смена поля сбросит текущую игру. Продолжить?')) {
+                    setFieldType(e.target.value);
+                    resetGame();
+                } else {
+                    fieldTypeSelect.value = localStorage.getItem('match3_field_type') || 'classic';
+                }
+            });
+
+            loadAudioSettings();
+            setMusicVolume(musicVolume);
+            setMusicEnabled(musicEnabled);
+            setSfxEnabled(sfxEnabled);
+
+            function enableAudioOnUserInteraction() {
+                initAudio();
+                document.removeEventListener('click', enableAudioOnUserInteraction);
+                document.removeEventListener('touchstart', enableAudioOnUserInteraction);
+            }
+            document.addEventListener('click', enableAudioOnUserInteraction);
+            document.addEventListener('touchstart', enableAudioOnUserInteraction);
+
+            for (let i = 0; i < TYPES; i++) {
+                const input = document.getElementById(`asset${i}`);
+                if (input) input.addEventListener('change', loadAssetsFromInputs);
+            }
+            const bombInput = document.getElementById('bombAsset');
+            if (bombInput) bombInput.addEventListener('change', loadAssetsFromInputs);
+
+            loadImagesFromLocalStorage();
+
+            if (!loadGameState()) {
+                initBoard();
+                drawBoard();
+            } else {
+                gameContainer.classList.add('visible');
+                mainMenu.style.display = 'none';
+                resizeCanvas();
+                drawBoard();
+            }
+
+            canvas.addEventListener('mousedown', onDragStart);
+            window.addEventListener('mousemove', onDragMove);
+            window.addEventListener('mouseup', onDragEnd);
+            canvas.addEventListener('touchstart', onDragStart, { passive: false });
+            document.addEventListener('touchmove', onDragMove, { passive: false });
+            document.addEventListener('touchend', onDragEnd, { passive: false });
+
+            function showMenu() {
+                gameContainer.classList.remove('visible');
+                mainMenu.style.display = 'flex';
+                modeSelectDiv.style.display = 'none';
+                if (musicEnabled && audioCtx) { stopMusic(); startMusic(); }
+            }
+
+            mainMenu.style.display = 'flex';
+            gameContainer.classList.remove('visible');
+
+            const resetProgressBtn = document.getElementById('resetProgressBtn');
+            if (resetProgressBtn) {
+                resetProgressBtn.addEventListener('click', () => {
+                    if (confirm('Вы уверены, что хотите сбросить весь прогресс? Это действие нельзя отменить.')) {
+                        const keys = [
+                            'match3_board', 'match3_score', 'match3_mode',
+                            'match3_story_goal_type', 'match3_story_goal_count', 'match3_story_goal_name', 'match3_story_collected',
+                            'match3_images', 'match3_bomb_image',
+                            'match3MusicEnabled', 'match3SfxEnabled', 'match3MusicVolume', 'match3CurrentMelody',
+                            'match3CustomMusic', 'match3CustomMatchSound', 'match3_coins', 'match3_field_type'
+                        ];
+                        keys.forEach(key => localStorage.removeItem(key));
+                        location.reload();
+                    }
+                });
+            }
+        })();
+    </script>
 </body>
 </html>
