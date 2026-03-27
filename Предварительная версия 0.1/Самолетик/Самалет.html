@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Космический рейнджер | Аркадный шутер</title>
+    <style>
+        * {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(145deg, #03050b 0%, #0a0f1f 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', 'Segoe UI', monospace;
+            position: relative;
+        }
+
+        /* Главное меню */
+        .main-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: 0.3s;
+        }
+        .menu-card {
+            background: radial-gradient(circle at 30% 20%, #1a2a3a, #0a121f);
+            border-radius: 64px;
+            padding: 40px 50px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            border: 2px solid #ffaa66;
+            max-width: 450px;
+            width: 90%;
+        }
+        .menu-card h1 {
+            font-size: 48px;
+            color: #ffaa66;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        .difficulty-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .difficulty-btn {
+            background: #3a2a1e;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #ffefc0;
+            border: none;
+            box-shadow: 0 3px 0 #5a3a2a;
+        }
+        .difficulty-btn.active {
+            background: #ff8844;
+            color: white;
+            box-shadow: 0 0 8px #ffaa44;
+            transform: translateY(-1px);
+        }
+        .menu-card button {
+            width: 100%;
+            margin: 12px 0;
+            padding: 14px;
+            font-size: 22px;
+            background: linear-gradient(145deg, #ffaa55, #ff8844);
+            border: none;
+            border-radius: 60px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            color: white;
+            text-shadow: 0 1px 2px black;
+            box-shadow: 0 5px 0 #aa5533;
+        }
+        .menu-card button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #aa5533;
+        }
+        .highscore {
+            margin-top: 15px;
+            font-size: 18px;
+            color: #ffdd99;
+            background: rgba(0,0,0,0.5);
+            padding: 8px;
+            border-radius: 40px;
+        }
+
+        /* Игровой контейнер (изначально скрыт) */
+        .game-container {
+            display: none;
+            padding: 20px;
+            border-radius: 48px;
+            background: rgba(0, 0, 0, 0.45);
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        .game-container.visible {
+            display: block;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 24px;
+            box-shadow: 0 0 0 3px #2e3b4e, 0 15px 25px rgba(0, 0, 0, 0.5);
+            cursor: none;
+        }
+
+        .info-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-top: 18px;
+            margin-bottom: 10px;
+            padding: 8px 20px;
+            background: #0b0e17cc;
+            backdrop-filter: blur(4px);
+            border-radius: 60px;
+            border: 1px solid #2c3f55;
+            color: #bbf0ff;
+            text-shadow: 0 0 5px #00a6ff;
+            font-weight: bold;
+        }
+
+        .score-box, .lives-box {
+            background: #01010180;
+            padding: 6px 18px;
+            border-radius: 32px;
+            font-size: 1.7rem;
+            letter-spacing: 2px;
+        }
+        .score-box span, .lives-box span {
+            color: #f5c542;
+            font-size: 1.9rem;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .restart-btn, .menu-btn {
+            background: #1f2a3e;
+            border: none;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 6px 18px;
+            border-radius: 40px;
+            color: #e0f2fe;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 3px 0 #0a0e14;
+        }
+        .restart-btn:hover, .menu-btn:hover {
+            background: #2f3d5a;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 0 #0a0e14;
+        }
+        .controls-hint {
+            margin-top: 12px;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #7f8c9a;
+            background: #00000055;
+            padding: 5px 12px;
+            border-radius: 50px;
+            display: inline-block;
+            width: auto;
+        }
+
+        /* Модальное окно настроек */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+            z-index: 1100;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #0e1622;
+            border-radius: 48px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 30px rgba(0,0,0,0.5);
+            border: 1px solid #ffaa66;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .modal-content h3 {
+            color: #ffd966;
+            margin-bottom: 20px;
+        }
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 15px 0;
+            color: #ffefc0;
+        }
+        .setting-item label {
+            font-size: 18px;
+        }
+        input[type="range"] {
+            width: 150px;
+            cursor: pointer;
+            background: #ffaa66;
+            border-radius: 20px;
+        }
+        .melody-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        .melody-btn {
+            background: #3a2a1e;
+            padding: 6px 12px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #ffdd99;
+        }
+        .melody-btn.active {
+            background: #ff8844;
+            color: white;
+        }
+        .close-modal {
+            margin-top: 20px;
+            background: #ffaa55;
+            padding: 8px 20px;
+            border-radius: 40px;
+            border: none;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        @media (max-width: 860px) {
+            .score-box, .lives-box { font-size: 1.2rem; padding: 3px 12px;}
+            .score-box span, .lives-box span { font-size: 1.4rem;}
+            .restart-btn, .menu-btn { font-size: 1rem;}
+            .difficulty-btn { font-size: 14px; padding: 6px 14px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Главное меню -->
+    <div id="mainMenu" class="main-menu">
+        <div class="menu-card">
+            <h1>⚡ КОСМИЧЕСКИЙ РЕЙНДЖЕР ⚡</h1>
+            <div class="difficulty-buttons">
+                <button data-diff="easy" class="difficulty-btn">🍃 Лёгкий</button>
+                <button data-diff="medium" class="difficulty-btn active">⚡ Средний</button>
+                <button data-diff="hard" class="difficulty-btn">🔥 Сложный</button>
+            </div>
+            <button id="playBtn">▶ ИГРАТЬ</button>
+            <button id="menuSettingsBtn">⚙️ НАСТРОЙКИ</button>
+            <div class="highscore" id="highScoreDisplay">🏆 РЕКОРД: 0</div>
+        </div>
+    </div>
+
+    <!-- Игровой контейнер -->
+    <div id="gameContainer" class="game-container">
+        <canvas id="gameCanvas" width="900" height="650"></canvas>
+        <div class="info-panel">
+            <div class="score-box"><span>⚡</span> <span id="scoreValue">0</span></div>
+            <div class="lives-box"><span>🛸</span> <span id="livesValue">3</span></div>
+            <button class="restart-btn" id="restartButton">🔄 РЕСТАРТ</button>
+            <button class="menu-btn" id="gameMenuBtn">🏠 МЕНЮ</button>
+        </div>
+        <div class="controls-hint">
+            🎮  [← →] или [A / D] — движение | [ПРОБЕЛ] или [ЛКМ] — стрельба плазмой
+        </div>
+    </div>
+
+    <!-- Модальное окно настроек -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <h3>⚙️ НАСТРОЙКИ</h3>
+            <div class="setting-item">
+                <label>🎵 Музыка</label>
+                <input type="checkbox" id="musicToggle" checked>
+            </div>
+            <div class="setting-item">
+                <label>🔊 Звуки</label>
+                <input type="checkbox" id="sfxToggle" checked>
+            </div>
+            <div class="setting-item">
+                <label>🔊 Громкость</label>
+                <input type="range" id="volumeSlider" min="0" max="100" value="50">
+            </div>
+            <div class="setting-item">
+                <label>🎼 Мелодия</label>
+                <div class="melody-selector" id="melodySelector">
+                    <div data-melody="0" class="melody-btn">Космос</div>
+                    <div data-melody="1" class="melody-btn">Энергия</div>
+                    <div data-melody="2" class="melody-btn">Битва</div>
+                </div>
+            </div>
+            <button class="close-modal" id="closeSettingsBtn">Закрыть</button>
+        </div>
+    </div>
+
+<script>
+    (function() {
+        // ========== АУДИО СИСТЕМА ==========
+        let audioCtx = null;
+        let musicEnabled = true;
+        let sfxEnabled = true;
+        let musicVolume = 0.5;
+        let masterGain = null;
+        let musicInterval = null;
+        let isAudioInit = false;
+        let currentMelody = 0;
+
+        // Мелодии для космической тематики
+        const melodies = [
+            { name: "Космос", notes: [523.25, 493.88, 440.00, 392.00, 349.23, 329.63, 293.66, 261.63, 293.66, 329.63, 349.23, 392.00, 440.00], waveType: "sine", intervalMs: 700 },
+            { name: "Энергия", notes: [659.25, 698.46, 783.99, 880.00, 987.77, 880.00, 783.99, 698.46, 659.25, 587.33, 523.25, 493.88, 440.00], waveType: "sawtooth", intervalMs: 500 },
+            { name: "Битва", notes: [440.00, 440.00, 440.00, 523.25, 523.25, 523.25, 587.33, 587.33, 587.33, 659.25, 659.25, 659.25, 783.99], waveType: "square", intervalMs: 380 }
+        ];
+        let currentNoteIndex = 0;
+
+        function playMelodyTick() {
+            if (!musicEnabled || !audioCtx || !masterGain) return;
+            const melody = melodies[currentMelody];
+            const note = melody.notes[currentNoteIndex % melody.notes.length];
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = melody.waveType;
+            osc.frequency.value = note;
+            gain.gain.setValueAtTime(0.45 * musicVolume, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start();
+            osc.stop(now + 0.35);
+            currentNoteIndex++;
+        }
+
+        function startMusic() {
+            if (musicInterval) clearInterval(musicInterval);
+            if (!musicEnabled || !audioCtx || !masterGain) return;
+            const melody = melodies[currentMelody];
+            musicInterval = setInterval(() => {
+                if (musicEnabled && audioCtx && masterGain) playMelodyTick();
+            }, melody.intervalMs);
+        }
+
+        function stopMusic() {
+            if (musicInterval) {
+                clearInterval(musicInterval);
+                musicInterval = null;
+            }
+        }
+
+        function setMusicEnabled(enabled) {
+            musicEnabled = enabled;
+            saveAudioSettings();
+            if (enabled && audioCtx && masterGain) startMusic();
+            else stopMusic();
+        }
+
+        function setSfxEnabled(enabled) {
+            sfxEnabled = enabled;
+            saveAudioSettings();
+        }
+
+        function setMusicVolume(volume) {
+            musicVolume = Math.min(1, Math.max(0, volume));
+            if (masterGain) masterGain.gain.value = musicVolume;
+            saveAudioSettings();
+        }
+
+        function setMelody(index) {
+            currentMelody = Math.min(index, melodies.length-1);
+            saveAudioSettings();
+            if (musicEnabled && audioCtx) {
+                stopMusic();
+                startMusic();
+            }
+            updateMelodyUI();
+        }
+
+        function saveAudioSettings() {
+            localStorage.setItem('shooterMusicEnabled', musicEnabled);
+            localStorage.setItem('shooterSfxEnabled', sfxEnabled);
+            localStorage.setItem('shooterMusicVolume', musicVolume);
+            localStorage.setItem('shooterCurrentMelody', currentMelody);
+        }
+
+        function loadAudioSettings() {
+            const savedMusic = localStorage.getItem('shooterMusicEnabled');
+            if (savedMusic !== null) musicEnabled = savedMusic === 'true';
+            const savedSfx = localStorage.getItem('shooterSfxEnabled');
+            if (savedSfx !== null) sfxEnabled = savedSfx === 'true';
+            const savedVolume = localStorage.getItem('shooterMusicVolume');
+            if (savedVolume !== null) musicVolume = parseFloat(savedVolume);
+            const savedMelody = localStorage.getItem('shooterCurrentMelody');
+            if (savedMelody !== null) currentMelody = parseInt(savedMelody);
+            document.getElementById('musicToggle').checked = musicEnabled;
+            document.getElementById('sfxToggle').checked = sfxEnabled;
+            document.getElementById('volumeSlider').value = musicVolume * 100;
+            updateMelodyUI();
+        }
+
+        function updateMelodyUI() {
+            document.querySelectorAll('.melody-btn').forEach((btn, idx) => {
+                if (idx == currentMelody) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+        }
+
+        function initAudio() {
+            if (isAudioInit) return;
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = audioCtx.createGain();
+                masterGain.gain.value = musicVolume;
+                masterGain.connect(audioCtx.destination);
+            }
+            isAudioInit = true;
+            if (musicEnabled) startMusic();
+        }
+
+        // Звуковые эффекты
+        function playShootSound() {
+            if (!sfxEnabled || !audioCtx) return;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = 880;
+            gain.gain.setValueAtTime(0.25 * musicVolume, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+            osc.frequency.exponentialRampToValueAtTime(440, now + 0.08);
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start();
+            osc.stop(now + 0.12);
+        }
+
+        function playExplosionSound() {
+            if (!sfxEnabled || !audioCtx) return;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.value = 150;
+            gain.gain.setValueAtTime(0.4 * musicVolume, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+            osc.frequency.exponentialRampToValueAtTime(80, now + 0.25);
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start();
+            osc.stop(now + 0.3);
+        }
+
+        function playHitSound() {
+            if (!sfxEnabled || !audioCtx) return;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.value = 660;
+            gain.gain.setValueAtTime(0.2 * musicVolume, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+            osc.frequency.exponentialRampToValueAtTime(440, now + 0.08);
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start();
+            osc.stop(now + 0.12);
+        }
+
+        function playGameOverSound() {
+            if (!sfxEnabled || !audioCtx) return;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.value = 330;
+            gain.gain.setValueAtTime(0.5 * musicVolume, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+            osc.frequency.exponentialRampToValueAtTime(110, now + 0.5);
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start();
+            osc.stop(now + 0.6);
+        }
+
+        // ========== ИГРОВАЯ ЛОГИКА ==========
+        const W = 900, H = 650;
+        const PLAYER_WIDTH = 44, PLAYER_HEIGHT = 38;
+        let player = {
+            x: W/2 - PLAYER_WIDTH/2,
+            y: H - 70,
+            width: PLAYER_WIDTH,
+            height: PLAYER_HEIGHT,
+            hp: 3,
+            invincibleFrames: 0,
+            shootCooldown: 0
+        };
+        let bullets = [], enemyBullets = [], enemies = [];
+        let score = 0, highScore = 0;
+        let gameOver = false;
+        let leftPressed = false, rightPressed = false, shootPressed = false;
+        let enemySpawnCounter = 0;
+        let explosionParticles = [];
+        let screenShake = 0;
+        let difficulty = 'medium'; // easy, medium, hard
+        let animationId = null;
+
+        // Загрузка рекорда
+        function loadHighScore() {
+            const saved = localStorage.getItem('shooterHighScore');
+            if (saved) highScore = parseInt(saved);
+            document.getElementById('highScoreDisplay').innerHTML = `🏆 РЕКОРД: ${highScore}`;
+        }
+        function saveHighScore() {
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('shooterHighScore', highScore);
+                document.getElementById('highScoreDisplay').innerHTML = `🏆 РЕКОРД: ${highScore}`;
+            }
+        }
+
+        // Параметры сложности
+        function getDifficultyParams() {
+            switch(difficulty) {
+                case 'easy':
+                    return { enemySpawnBase: 38, enemySpeed: 1.3, enemyShootDelay: 70, bulletSpeed: 4.2 };
+                case 'hard':
+                    return { enemySpawnBase: 20, enemySpeed: 2.4, enemyShootDelay: 40, bulletSpeed: 6.2 };
+                default:
+                    return { enemySpawnBase: 28, enemySpeed: 1.85, enemyShootDelay: 55, bulletSpeed: 5.2 };
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('scoreValue').innerText = score;
+            document.getElementById('livesValue').innerText = player.hp;
+        }
+
+        function addExplosion(px, py, colorType = 'enemy') {
+            if (sfxEnabled) playExplosionSound();
+            const count = 12 + Math.floor(Math.random() * 8);
+            for(let i=0; i<count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 1.8 + Math.random() * 3.5;
+                const vx = Math.cos(angle) * speed;
+                const vy = Math.sin(angle) * speed;
+                const life = 0.6 + Math.random() * 0.7;
+                const size = 3 + Math.random() * 6;
+                let color = colorType === 'enemy' ? '#ff7840' : '#ff3366';
+                explosionParticles.push({ x: px, y: py, vx, vy, life, maxLife: life, size, color });
+            }
+            screenShake = 6;
+        }
+
+        function updateParticles() {
+            for(let i=0; i<explosionParticles.length; i++) {
+                const p = explosionParticles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.025;
+                if(p.life <= 0 || p.y > H+50 || p.x < -50 || p.x > W+50) {
+                    explosionParticles.splice(i,1);
+                    i--;
+                }
+            }
+            if(screenShake > 0) screenShake -= 0.8;
+            else screenShake = 0;
+        }
+
+        function updatePlayer() {
+            if(gameOver) return;
+            const speed = 7.2;
+            if(leftPressed && player.x > 10) player.x -= speed;
+            if(rightPressed && player.x + PLAYER_WIDTH < W - 10) player.x += speed;
+            player.x = Math.min(Math.max(player.x, 8), W - PLAYER_WIDTH - 8);
+            if(player.invincibleFrames > 0) player.invincibleFrames--;
+            if(player.shootCooldown > 0) player.shootCooldown--;
+            if(shootPressed && !gameOver && player.shootCooldown === 0) {
+                bullets.push({ x: player.x + PLAYER_WIDTH/2 - 4, y: player.y - 12, w: 8, h: 14, damage: 1 });
+                player.shootCooldown = 12;
+                if (sfxEnabled) playShootSound();
+            }
+        }
+
+        function spawnEnemy() {
+            const params = getDifficultyParams();
+            let variant = Math.floor(Math.random() * 3);
+            let hp = variant === 1 ? 2 : 1;
+            let color = variant === 1 ? '#b44cdd' : (variant === 2 ? '#3ea5d4' : '#dc6a42');
+            let speedY = params.enemySpeed + (variant === 2 ? 0.5 : 0);
+            let speedX = (Math.random() - 0.5) * 1.2;
+            enemies.push({
+                x: Math.random() * (W - 42 - 30) + 15,
+                y: -36,
+                width: 42, height: 36,
+                hp: hp, maxHp: hp,
+                type: variant,
+                color: color,
+                speedX: speedX,
+                speedY: speedY,
+                shootTimer: Math.floor(10 + Math.random() * params.enemyShootDelay),
+            });
+        }
+
+        function updateEnemies() {
+            const params = getDifficultyParams();
+            for(let i=0; i<enemies.length; i++) {
+                const e = enemies[i];
+                e.x += e.speedX;
+                e.y += e.speedY;
+                e.x = Math.min(Math.max(e.x, 5), W - e.width - 5);
+                if(!gameOver && e.shootTimer <= 0) {
+                    enemyBullets.push({ x: e.x + e.width/2 - 3.5, y: e.y + e.height/2, w: 7, h: 12, damage: 1 });
+                    e.shootTimer = params.enemyShootDelay + Math.random() * 20;
+                } else if(!gameOver) e.shootTimer--;
+                if(e.y + e.height > H + 100 || e.y + e.height < -150) {
+                    enemies.splice(i,1); i--; continue;
+                }
+                if(!gameOver && player.invincibleFrames === 0) {
+                    if(e.x < player.x+player.width && e.x+e.width > player.x && e.y < player.y+player.height && e.y+e.height > player.y) {
+                        player.hp -= 1;
+                        if(player.hp <= 0) { player.hp = 0; gameOver = true; addExplosion(player.x+player.width/2, player.y+player.height/2, 'player'); if(sfxEnabled) playGameOverSound(); }
+                        else { player.invincibleFrames = 45; addExplosion(e.x+e.width/2, e.y+e.height/2, 'enemy'); }
+                        enemies.splice(i,1); i--;
+                        updateUI(); continue;
+                    }
+                }
+                for(let j=0; j<bullets.length; j++) {
+                    const b = bullets[j];
+                    if(b.x < e.x+e.width && b.x+b.w > e.x && b.y < e.y+e.height && b.y+b.h > e.y) {
+                        bullets.splice(j,1);
+                        e.hp -= 1;
+                        if(e.hp <= 0) {
+                            let addScore = (e.type === 1) ? 30 : (e.type === 2 ? 20 : 15);
+                            score += addScore;
+                            updateUI();
+                            addExplosion(e.x+e.width/2, e.y+e.height/2, 'enemy');
+                            enemies.splice(i,1); i--;
+                        } else {
+                            for(let p=0;p<5;p++) explosionParticles.push({ x: b.x+b.w/2, y: b.y+b.h/2, vx: (Math.random()-0.5)*3, vy: (Math.random()-0.5)*3, life: 0.3, maxLife: 0.3, size: 3, color: '#ffaa55' });
+                            if(sfxEnabled) playHitSound();
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        function updateBullets() {
+            for(let i=0; i<bullets.length; i++) {
+                bullets[i].y -= 7.8;
+                if(bullets[i].y + bullets[i].h < 0 || bullets[i].y > H) bullets.splice(i--,1);
+            }
+            const params = getDifficultyParams();
+            for(let i=0; i<enemyBullets.length; i++) {
+                const eb = enemyBullets[i];
+                eb.y += params.bulletSpeed;
+                if(eb.y + eb.h < 0 || eb.y > H) { enemyBullets.splice(i--,1); continue; }
+                if(!gameOver && player.invincibleFrames === 0) {
+                    if(eb.x < player.x+player.width && eb.x+eb.w > player.x && eb.y < player.y+player.height && eb.y+eb.h > player.y) {
+                        player.hp -= 1;
+                        enemyBullets.splice(i--,1);
+                        if(player.hp <= 0) { player.hp = 0; gameOver = true; addExplosion(player.x+player.width/2, player.y+player.height/2, 'player'); if(sfxEnabled) playGameOverSound(); }
+                        else { player.invincibleFrames = 40; addExplosion(player.x+player.width/2, player.y+player.height/2, 'player'); if(sfxEnabled) playHitSound(); }
+                        updateUI();
+                    }
+                }
+            }
+        }
+
+        function updateSpawning() {
+            if(gameOver) return;
+            const params = getDifficultyParams();
+            let dynamicDelay = Math.max(16, params.enemySpawnBase - Math.floor(score / 300));
+            if(enemySpawnCounter <= 0) {
+                spawnEnemy();
+                if(score > 500 && Math.random() < 0.3) spawnEnemy();
+                enemySpawnCounter = dynamicDelay;
+            } else enemySpawnCounter--;
+        }
+
+        function restartGame() {
+            gameOver = false;
+            score = 0;
+            player.hp = 3;
+            player.x = W/2 - PLAYER_WIDTH/2;
+            player.y = H - 70;
+            player.invincibleFrames = 0;
+            player.shootCooldown = 0;
+            bullets = [];
+            enemyBullets = [];
+            enemies = [];
+            explosionParticles = [];
+            screenShake = 0;
+            enemySpawnCounter = 8;
+            updateUI();
+            leftPressed = false;
+            rightPressed = false;
+            shootPressed = false;
+        }
+
+        // Отрисовка (сжатая)
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            ctx.fillStyle = "#020617"; ctx.fillRect(0, 0, W, H);
+            for(let i=0;i<200;i++) { let sx=(i*131)%W, sy=(i*253)%H; ctx.fillStyle=`rgba(255,240,200,${0.3+Math.sin(Date.now()*0.002+i)*0.2})`; ctx.fillRect(sx,sy,1.5,1.5); }
+            if(!gameOver || player.hp>0) {
+                let drawPlayer = !(player.invincibleFrames>0 && (Math.floor(Date.now()/50)%3===0));
+                if(drawPlayer) {
+                    ctx.shadowBlur=12; ctx.shadowColor="#0af"; ctx.fillStyle="#7ec8ff"; ctx.beginPath(); ctx.roundRect(player.x,player.y,PLAYER_WIDTH,PLAYER_HEIGHT,12); ctx.fill();
+                    ctx.fillStyle="#ffb347"; ctx.beginPath(); ctx.moveTo(player.x+PLAYER_WIDTH/2,player.y-10); ctx.lineTo(player.x+PLAYER_WIDTH/2-8,player.y+8); ctx.lineTo(player.x+PLAYER_WIDTH/2+8,player.y+8); ctx.fill();
+                    ctx.fillStyle="#2c3e66"; ctx.beginPath(); ctx.roundRect(player.x+8,player.y+12,8,12,4); ctx.roundRect(player.x+PLAYER_WIDTH-16,player.y+12,8,12,4); ctx.fill();
+                    ctx.fillStyle="#ff4444"; ctx.beginPath(); ctx.arc(player.x+PLAYER_WIDTH/2,player.y+PLAYER_HEIGHT-8,6,0,Math.PI*2); ctx.fill();
+                }
+            }
+            for(let e of enemies) { ctx.shadowBlur=6; ctx.fillStyle=e.color; ctx.beginPath(); ctx.roundRect(e.x,e.y,42,36,12); ctx.fill(); ctx.fillStyle="#fff3b0"; ctx.beginPath(); ctx.ellipse(e.x+32,e.y+12,6,5,0,0,Math.PI*2); ctx.ellipse(e.x+10,e.y+12,6,5,0,0,Math.PI*2); ctx.fill(); if(e.hp>1){ ctx.fillStyle="#ffdd88"; ctx.font="bold 14 monospace"; ctx.fillText("🛡️"+e.hp, e.x+12, e.y+28); } }
+            for(let b of bullets) { ctx.fillStyle="#f0f05e"; ctx.shadowBlur=10; ctx.beginPath(); ctx.roundRect(b.x,b.y,8,14,4); ctx.fill(); ctx.fillStyle="white"; ctx.beginPath(); ctx.roundRect(b.x+2,b.y+2,4,10,3); ctx.fill(); }
+            for(let eb of enemyBullets) { ctx.fillStyle="#ff5588"; ctx.fillRect(eb.x,eb.y,7,12); ctx.fillStyle="#ffaa99"; ctx.fillRect(eb.x+2,eb.y+2,3,8); }
+            for(let p of explosionParticles) { ctx.globalAlpha=p.life/p.maxLife*0.9; ctx.fillStyle=p.color; ctx.fillRect(p.x-p.size/2,p.y-p.size/2,p.size,p.size); }
+            ctx.globalAlpha=1;
+            if(gameOver) { ctx.font="bold 44 monospace"; ctx.fillStyle="#ff3366"; ctx.fillText("GAME OVER", W/2-150, H/2-60); ctx.font="26px monospace"; ctx.fillStyle="#aaf0ff"; ctx.fillText("нажми [РЕСТАРТ]", W/2-135, H/2+30); }
+            if(screenShake>0) ctx.translate((Math.random()-0.5)*screenShake, (Math.random()-0.5)*screenShake);
+            ctx.font="12px monospace"; ctx.fillStyle="#6e85b5"; ctx.fillText("⚡ сложность ▲ " + Math.floor(score/100), 20, 40);
+        }
+
+        // Цикл
+        function gameUpdate() {
+            if(!gameOver) {
+                updatePlayer();
+                updateEnemies();
+                updateBullets();
+                updateSpawning();
+                updateParticles();
+                if(player.hp <= 0) { gameOver = true; if(sfxEnabled) playGameOverSound(); }
+                updateUI();
+                saveHighScore();
+            } else updateParticles();
+            draw();
+            animationId = requestAnimationFrame(gameUpdate);
+        }
+
+        // Управление
+        function handleKeyDown(e) {
+            if(e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') leftPressed = true;
+            if(e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') rightPressed = true;
+            if(e.key === ' ' || e.key === 'Space') { shootPressed = true; e.preventDefault(); }
+            if(e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === ' ') e.preventDefault();
+        }
+        function handleKeyUp(e) {
+            if(e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') leftPressed = false;
+            if(e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') rightPressed = false;
+            if(e.key === ' ' || e.key === 'Space') { shootPressed = false; e.preventDefault(); }
+        }
+        function handleMouseMove(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            let mouseX = (e.clientX - rect.left) * scaleX;
+            if(!gameOver) player.x = Math.min(Math.max(mouseX - PLAYER_WIDTH/2, 8), W - PLAYER_WIDTH - 8);
+        }
+        function handleMouseDown(e) { if(e.button === 0) { shootPressed = true; e.preventDefault(); } }
+        function handleMouseUp(e) { if(e.button === 0) shootPressed = false; }
+
+        // Меню
+        const mainMenu = document.getElementById('mainMenu');
+        const gameContainer = document.getElementById('gameContainer');
+        const playBtn = document.getElementById('playBtn');
+        const menuSettingsBtn = document.getElementById('menuSettingsBtn');
+        const gameMenuBtn = document.getElementById('gameMenuBtn');
+        const restartBtn = document.getElementById('restartButton');
+        const settingsModal = document.getElementById('settingsModal');
+        const closeSettings = document.getElementById('closeSettingsBtn');
+        const musicToggle = document.getElementById('musicToggle');
+        const sfxToggle = document.getElementById('sfxToggle');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        document.querySelectorAll('.difficulty-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                difficulty = btn.getAttribute('data-diff');
+            });
+        });
+
+        function showGame() {
+            mainMenu.style.display = 'none';
+            gameContainer.classList.add('visible');
+            restartGame();
+        }
+        function showMenu() {
+            gameContainer.classList.remove('visible');
+            mainMenu.style.display = 'flex';
+            if (musicEnabled && audioCtx) { stopMusic(); startMusic(); }
+        }
+
+        playBtn.addEventListener('click', () => { if(!isAudioInit) initAudio(); showGame(); });
+        gameMenuBtn.addEventListener('click', showMenu);
+        restartBtn.addEventListener('click', () => { if(gameContainer.classList.contains('visible')) restartGame(); });
+        menuSettingsBtn.addEventListener('click', () => { if(!isAudioInit) initAudio(); settingsModal.style.display = 'flex'; });
+        closeSettings.addEventListener('click', () => settingsModal.style.display = 'none');
+        settingsModal.addEventListener('click', (e) => { if(e.target === settingsModal) settingsModal.style.display = 'none'; });
+        musicToggle.addEventListener('change', (e) => setMusicEnabled(e.target.checked));
+        sfxToggle.addEventListener('change', (e) => setSfxEnabled(e.target.checked));
+        volumeSlider.addEventListener('input', (e) => setMusicVolume(e.target.value / 100));
+        document.querySelectorAll('.melody-btn').forEach(btn => {
+            btn.addEventListener('click', () => setMelody(parseInt(btn.dataset.melody)));
+        });
+
+        loadAudioSettings();
+        setMusicVolume(musicVolume);
+        setMusicEnabled(musicEnabled);
+        setSfxEnabled(sfxEnabled);
+        loadHighScore();
+
+        function enableAudioOnInteraction() { initAudio(); document.removeEventListener('click', enableAudioOnInteraction); document.removeEventListener('touchstart', enableAudioOnInteraction); }
+        document.addEventListener('click', enableAudioOnInteraction);
+        document.addEventListener('touchstart', enableAudioOnInteraction);
+
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('mousedown', handleMouseDown);
+        window.addEventListener('mouseup', handleMouseUp);
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        gameUpdate();
+        mainMenu.style.display = 'flex';
+        gameContainer.classList.remove('visible');
+    })();
+</script>
+</body>
+</html>

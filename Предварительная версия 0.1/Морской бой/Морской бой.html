@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Морской бой с ИИ — выбор сложности</title>
+    <style>
+        * {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #0a2f4a, #05202f);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* Главное меню */
+        .main-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(12px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: 0.3s;
+        }
+        .menu-card {
+            background: radial-gradient(circle at 30% 20%, #ffd89b, #c7e9fb);
+            border-radius: 64px;
+            padding: 40px 50px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            border: 2px solid #ffaa66;
+            max-width: 400px;
+            width: 90%;
+        }
+        .menu-card h1 {
+            font-size: 48px;
+            color: #ff6633;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        .difficulty-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .difficulty-btn {
+            background: #3a2a1e;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #ffefc0;
+            border: none;
+            box-shadow: 0 3px 0 #5a3a2a;
+        }
+        .difficulty-btn.active {
+            background: #ff8844;
+            color: white;
+            box-shadow: 0 0 8px #ffaa44;
+            transform: translateY(-1px);
+        }
+        .menu-card button {
+            width: 100%;
+            margin: 12px 0;
+            padding: 14px;
+            font-size: 22px;
+            background: linear-gradient(145deg, #ffaa55, #ff8844);
+            border: none;
+            border-radius: 60px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            color: white;
+            text-shadow: 0 1px 2px black;
+            box-shadow: 0 5px 0 #aa5533;
+        }
+        .menu-card button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #aa5533;
+        }
+
+        /* Игровой контейнер (изначально скрыт) */
+        .game-container {
+            background: #2c3e4e;
+            border-radius: 48px;
+            padding: 25px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.5), inset 0 1px 3px rgba(255,255,200,0.2);
+            text-align: center;
+            display: none;
+        }
+        .game-container.visible {
+            display: block;
+        }
+
+        h1 {
+            color: #ffd966;
+            font-size: 32px;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .fields {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .field {
+            background: #1e2f3a;
+            border-radius: 20px;
+            padding: 12px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 5px 10px rgba(0,0,0,0.3);
+        }
+
+        .field-title {
+            color: #ffefc0;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            cursor: pointer;
+        }
+
+        .info-panel {
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            border-radius: 60px;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            color: #ffefc0;
+        }
+
+        .status {
+            background: #2e2b22;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .score {
+            display: flex;
+            gap: 20px;
+        }
+
+        .score div {
+            background: #2e2b22;
+            padding: 5px 16px;
+            border-radius: 40px;
+            font-size: 16px;
+        }
+
+        .score span {
+            font-weight: bold;
+            color: #ffaa66;
+            font-size: 22px;
+            margin-left: 8px;
+        }
+
+        button {
+            background: linear-gradient(145deg, #ffaa55, #ff8844);
+            border: none;
+            padding: 8px 28px;
+            border-radius: 40px;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.2s;
+            color: white;
+            text-shadow: 0 1px 2px black;
+            box-shadow: 0 5px 0 #aa5533;
+        }
+
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #aa5533;
+        }
+
+        /* Модальное окно настроек */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+            z-index: 1100;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #2c2b26;
+            border-radius: 48px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 30px rgba(0,0,0,0.5);
+            border: 1px solid #ffaa66;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .modal-content h3 {
+            color: #ffd966;
+            margin-bottom: 20px;
+        }
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 15px 0;
+            color: #ffefc0;
+        }
+        .setting-item label {
+            font-size: 18px;
+        }
+        input[type="range"] {
+            width: 150px;
+            cursor: pointer;
+            background: #ffaa66;
+            border-radius: 20px;
+        }
+        .melody-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        .melody-btn {
+            background: #3a2a1e;
+            padding: 6px 12px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #ffdd99;
+        }
+        .melody-btn.active {
+            background: #ff8844;
+            color: white;
+        }
+        .close-modal {
+            margin-top: 20px;
+            background: #ffaa55;
+            padding: 8px 20px;
+            border-radius: 40px;
+            border: none;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        @media (max-width: 900px) {
+            .fields {
+                gap: 15px;
+            }
+            .field-title {
+                font-size: 16px;
+            }
+            .status {
+                font-size: 14px;
+                padding: 5px 12px;
+            }
+            .score div {
+                font-size: 12px;
+                padding: 3px 10px;
+            }
+            .score span {
+                font-size: 18px;
+            }
+            button {
+                padding: 6px 20px;
+                font-size: 14px;
+            }
+            .difficulty-btn {
+                font-size: 14px;
+                padding: 6px 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Главное меню -->
+    <div id="mainMenu" class="main-menu">
+        <div class="menu-card">
+            <h1>⚓ МОРСКОЙ БОЙ ⚓</h1>
+            <h2 style="color:#ffaa66; margin-bottom:10px;">Выбери сложность ИИ</h2>
+            <div class="difficulty-buttons">
+                <button data-diff="easy" class="difficulty-btn">🍃 Лёгкий</button>
+                <button data-diff="medium" class="difficulty-btn active">⚡ Средний</button>
+                <button data-diff="hard" class="difficulty-btn">🔥 Сложный</button>
+            </div>
+            <button id="playBtn">▶ ИГРАТЬ</button>
+            <button id="menuSettingsBtn">⚙️ НАСТРОЙКИ</button>
+        </div>
+    </div>
+
+    <!-- Игровой контейнер -->
+    <div id="gameContainer" class="game-container">
+        <h1>⚓ Морской бой ⚓</h1>
+        <div class="fields">
+            <div class="field">
+                <div class="field-title">🚢 Ваши корабли</div>
+                <canvas id="playerCanvas" width="400" height="400"></canvas>
+            </div>
+            <div class="field">
+                <div class="field-title">💥 Флот противника</div>
+                <canvas id="aiCanvas" width="400" height="400"></canvas>
+            </div>
+        </div>
+        <div class="info-panel">
+            <div class="status" id="statusText">Ваш ход</div>
+            <div class="score">
+                <div>🎯 Ваши попадания: <span id="playerHits">0</span></div>
+                <div>💢 Попадания ИИ: <span id="aiHits">0</span></div>
+            </div>
+            <button id="resetBtn">🔄 Новая игра</button>
+            <button id="gameMenuBtn">🏠 Меню</button>
+        </div>
+    </div>
+
+    <!-- Модальное окно настроек -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <h3>⚙️ НАСТРОЙКИ</h3>
+            <div class="setting-item">
+                <label>🎵 Музыка</label>
+                <input type="checkbox" id="musicToggle" checked>
+            </div>
+            <div class="setting-item">
+                <label>🔊 Звуки</label>
+                <input type="checkbox" id="sfxToggle" checked>
+            </div>
+            <div class="setting-item">
+                <label>🔊 Громкость</label>
+                <input type="range" id="volumeSlider" min="0" max="100" value="50">
+            </div>
+            <div class="setting-item">
+                <label>🎼 Мелодия</label>
+                <div class="melody-selector" id="melodySelector">
+                    <div data-melody="0" class="melody-btn">Калинка</div>
+                    <div data-melody="1" class="melody-btn">Веселая</div>
+                    <div data-melody="2" class="melody-btn">Электро</div>
+                </div>
+            </div>
+            <button class="close-modal" id="closeSettingsBtn">Закрыть</button>
+        </div>
+    </div>
+
+<script>
+    (function() {
+        // ========== АУДИО СИСТЕМА (без изменений) ==========
+        let audioCtx = null;
+        let musicEnabled = true;
+        let sfxEnabled = true;
+        let musicVolume = 0.5;
+        let masterGain = null;
+        let musicInterval = null;
+        let isAudioInit = false;
+        let currentMelody = 0;
+
+        const melodies = [
+            { name: "Калинка", notes: [523.25, 587.33, 622.25, 523.25, 440.00, 392.00, 349.23, 392.00, 440.00, 392.00, 349.23, 311.13, 293.66, 261.63, 293.66, 261.63, 349.23, 392.00, 440.00, 523.25, 523.25, 493.88, 440.00, 392.00, 349.23, 311.13, 293.66, 261.63], waveType: "triangle", intervalMs: 550 },
+            { name: "Веселая", notes: [523.25, 587.33, 659.25, 523.25, 493.88, 440.00, 392.00, 440.00, 493.88, 523.25, 587.33, 659.25, 698.46, 659.25, 587.33, 523.25], waveType: "sine", intervalMs: 480 },
+            { name: "Электро", notes: [440.00, 554.37, 659.25, 880.00, 659.25, 554.37, 440.00, 329.63, 293.66, 329.63, 440.00, 554.37, 659.25, 440.00], waveType: "sawtooth", intervalMs: 400 }
+        ];
+        let currentNoteIndex = 0;
+
+        function playMelodyTick() {
+            if (!musicEnabled || !audioCtx || !masterGain) return;
+            const melody = melodies[currentMelody];
+            const note = melody.notes[currentNoteIndex % melody.notes.length];
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = melody.waveType;
+            osc.frequency.value = note;
+            gain.gain.setValueAtTime(0.55 * musicVolume, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start();
+            osc.stop(now + 0.3);
+            currentNoteIndex++;
+        }
+
+        function startMusic() {
+            if (musicInterval) clearInterval(musicInterval);
+            if (!musicEnabled || !audioCtx || !masterGain) return;
+            const melody = melodies[currentMelody];
+            musicInterval = setInterval(() => {
+                if (musicEnabled && audioCtx && masterGain) playMelodyTick();
+            }, melody.intervalMs);
+        }
+
+        function stopMusic() {
+            if (musicInterval) {
+                clearInterval(musicInterval);
+                musicInterval = null;
+            }
+        }
+
+        function setMusicEnabled(enabled) {
+            musicEnabled = enabled;
+            saveAudioSettings();
+            if (enabled && audioCtx && masterGain) startMusic();
+            else stopMusic();
+        }
+
+        function setSfxEnabled(enabled) {
+            sfxEnabled = enabled;
+            saveAudioSettings();
+        }
+
+        function setMusicVolume(volume) {
+            musicVolume = Math.min(1, Math.max(0, volume));
+            if (masterGain) masterGain.gain.value = musicVolume;
+            saveAudioSettings();
+        }
+
+        function setMelody(index) {
+            currentMelody = Math.min(index, melodies.length-1);
+            saveAudioSettings();
+            if (musicEnabled && audioCtx) {
+                stopMusic();
+                startMusic();
+            }
+            updateMelodyUI();
+        }
+
+        function saveAudioSettings() {
+            localStorage.setItem('battleshipMusicEnabled', musicEnabled);
+            localStorage.setItem('battleshipSfxEnabled', sfxEnabled);
+            localStorage.setItem('battleshipMusicVolume', musicVolume);
+            localStorage.setItem('battleshipCurrentMelody', currentMelody);
+        }
+
+        function loadAudioSettings() {
+            const savedMusic = localStorage.getItem('battleshipMusicEnabled');
+            if (savedMusic !== null) musicEnabled = savedMusic === 'true';
+            const savedSfx = localStorage.getItem('battleshipSfxEnabled');
+            if (savedSfx !== null) sfxEnabled = savedSfx === 'true';
+            const savedVolume = localStorage.getItem('battleshipMusicVolume');
+            if (savedVolume !== null) musicVolume = parseFloat(savedVolume);
+            const savedMelody = localStorage.getItem('battleshipCurrentMelody');
+            if (savedMelody !== null) currentMelody = parseInt(savedMelody);
+            document.getElementById('musicToggle').checked = musicEnabled;
+            document.getElementById('sfxToggle').checked = sfxEnabled;
+            document.getElementById('volumeSlider').value = musicVolume * 100;
+            updateMelodyUI();
+        }
+
+        function updateMelodyUI() {
+            document.querySelectorAll('.melody-btn').forEach((btn, idx) => {
+                if (idx == currentMelody) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+        }
+
+        function initAudio() {
+            if (isAudioInit) return;
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = audioCtx.createGain();
+                masterGain.gain.value = musicVolume;
+                masterGain.connect(audioCtx.destination);
+            }
+            isAudioInit = true;
+            if (musicEnabled) startMusic();
+        }
+
+        // Звуковые эффекты
+        function playHitSound() {
+            if (!sfxEnabled || !audioCtx) return;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = 880;
+            gain.gain.setValueAtTime(0.3 * musicVolume, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+            osc.frequency.exponentialRampToValueAtTime(660, now + 0.15);
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start();
+            osc.stop(now + 0.2);
+        }
+
+        function playMissSound() {
+            if (!sfxEnabled || !audioCtx) return;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.value = 220;
+            gain.gain.setValueAtTime(0.2 * musicVolume, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start();
+            osc.stop(now + 0.15);
+        }
+
+        function playWinSound() {
+            if (!sfxEnabled || !audioCtx) return;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = 523.25;
+            gain.gain.setValueAtTime(0.4 * musicVolume, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+            osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.4);
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start();
+            osc.stop(now + 0.5);
+        }
+
+        function playLoseSound() {
+            if (!sfxEnabled || !audioCtx) return;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.value = 440;
+            gain.gain.setValueAtTime(0.3 * musicVolume, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+            osc.frequency.exponentialRampToValueAtTime(220, now + 0.3);
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start();
+            osc.stop(now + 0.4);
+        }
+
+        // ========== ИГРОВАЯ ЛОГИКА ==========
+        const SIZE = 10;
+        const CELL_SIZE = 40;
+        const SHIP_SIZES = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1];
+
+        const EMPTY = 0;
+        const SHIP = 1;
+        const HIT = 2;
+        const MISS = 3;
+
+        let playerBoard = Array(SIZE).fill().map(() => Array(SIZE).fill(EMPTY));
+        let aiBoard = Array(SIZE).fill().map(() => Array(SIZE).fill(EMPTY));
+        let playerShots = Array(SIZE).fill().map(() => Array(SIZE).fill(EMPTY));
+        let aiShots = Array(SIZE).fill().map(() => Array(SIZE).fill(EMPTY));
+
+        let playerShipsRemaining = 20;
+        let aiShipsRemaining = 20;
+        let playerTurn = true;
+        let gameOver = false;
+        let aiTargetQueue = [];
+
+        // Уровень сложности (по умолчанию средний)
+        let difficulty = 'medium';
+
+        const playerCanvas = document.getElementById('playerCanvas');
+        const aiCanvas = document.getElementById('aiCanvas');
+        const ctxPlayer = playerCanvas.getContext('2d');
+        const ctxAI = aiCanvas.getContext('2d');
+        const statusText = document.getElementById('statusText');
+        const playerHitsSpan = document.getElementById('playerHits');
+        const aiHitsSpan = document.getElementById('aiHits');
+
+        function updateScoreUI() {
+            playerHitsSpan.textContent = 20 - playerShipsRemaining;
+            aiHitsSpan.textContent = 20 - aiShipsRemaining;
+        }
+
+        function canPlaceShip(board, x, y, length, horizontal) {
+            for (let i = 0; i < length; i++) {
+                let nx = horizontal ? x + i : x;
+                let ny = horizontal ? y : y + i;
+                if (nx < 0 || nx >= SIZE || ny < 0 || ny >= SIZE) return false;
+                if (board[ny][nx] !== EMPTY) return false;
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        let cx = nx + dx;
+                        let cy = ny + dy;
+                        if (cx >= 0 && cx < SIZE && cy >= 0 && cy < SIZE) {
+                            if (board[cy][cx] !== EMPTY) return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+
+        function placeShip(board, x, y, length, horizontal) {
+            for (let i = 0; i < length; i++) {
+                let nx = horizontal ? x + i : x;
+                let ny = horizontal ? y : y + i;
+                board[ny][nx] = SHIP;
+            }
+        }
+
+        function randomPlaceShips(board) {
+            for (let i = 0; i < SIZE; i++)
+                for (let j = 0; j < SIZE; j++)
+                    board[i][j] = EMPTY;
+            for (let size of SHIP_SIZES) {
+                let placed = false;
+                while (!placed) {
+                    let horizontal = Math.random() < 0.5;
+                    let x = Math.floor(Math.random() * SIZE);
+                    let y = Math.floor(Math.random() * SIZE);
+                    if (canPlaceShip(board, x, y, size, horizontal)) {
+                        placeShip(board, x, y, size, horizontal);
+                        placed = true;
+                    }
+                }
+            }
+        }
+
+        function drawPlayerBoard() {
+            ctxPlayer.clearRect(0, 0, 400, 400);
+            for (let i = 0; i < SIZE; i++) {
+                for (let j = 0; j < SIZE; j++) {
+                    let x = j * CELL_SIZE;
+                    let y = i * CELL_SIZE;
+                    if (aiShots[i][j] === HIT) {
+                        ctxPlayer.fillStyle = '#e34234';
+                        ctxPlayer.fillRect(x, y, CELL_SIZE-1, CELL_SIZE-1);
+                        ctxPlayer.fillStyle = '#fff';
+                        ctxPlayer.font = `${CELL_SIZE * 0.6}px Arial`;
+                        ctxPlayer.fillText('💥', x + CELL_SIZE/2 - 12, y + CELL_SIZE/2 + 8);
+                    } else if (aiShots[i][j] === MISS) {
+                        ctxPlayer.fillStyle = '#4a6a7a';
+                        ctxPlayer.fillRect(x, y, CELL_SIZE-1, CELL_SIZE-1);
+                        ctxPlayer.fillStyle = '#aaa';
+                        ctxPlayer.font = `${CELL_SIZE * 0.5}px Arial`;
+                        ctxPlayer.fillText('•', x + CELL_SIZE/2 - 5, y + CELL_SIZE/2 + 5);
+                    } else if (playerBoard[i][j] === SHIP) {
+                        ctxPlayer.fillStyle = '#5a9e6e';
+                        ctxPlayer.fillRect(x, y, CELL_SIZE-1, CELL_SIZE-1);
+                        ctxPlayer.fillStyle = '#2c5a3a';
+                        ctxPlayer.font = `${CELL_SIZE * 0.5}px Arial`;
+                        ctxPlayer.fillText('⬛', x + CELL_SIZE/2 - 8, y + CELL_SIZE/2 + 6);
+                    } else {
+                        ctxPlayer.fillStyle = '#2c4a5a';
+                        ctxPlayer.fillRect(x, y, CELL_SIZE-1, CELL_SIZE-1);
+                    }
+                    ctxPlayer.strokeStyle = '#7e9aae';
+                    ctxPlayer.strokeRect(x, y, CELL_SIZE-1, CELL_SIZE-1);
+                }
+            }
+        }
+
+        function drawAIBoard() {
+            ctxAI.clearRect(0, 0, 400, 400);
+            for (let i = 0; i < SIZE; i++) {
+                for (let j = 0; j < SIZE; j++) {
+                    let x = j * CELL_SIZE;
+                    let y = i * CELL_SIZE;
+                    if (playerShots[i][j] === HIT) {
+                        ctxAI.fillStyle = '#e34234';
+                        ctxAI.fillRect(x, y, CELL_SIZE-1, CELL_SIZE-1);
+                        ctxAI.fillStyle = '#fff';
+                        ctxAI.font = `${CELL_SIZE * 0.6}px Arial`;
+                        ctxAI.fillText('💥', x + CELL_SIZE/2 - 12, y + CELL_SIZE/2 + 8);
+                    } else if (playerShots[i][j] === MISS) {
+                        ctxAI.fillStyle = '#4a6a7a';
+                        ctxAI.fillRect(x, y, CELL_SIZE-1, CELL_SIZE-1);
+                        ctxAI.fillStyle = '#aaa';
+                        ctxAI.font = `${CELL_SIZE * 0.5}px Arial`;
+                        ctxAI.fillText('•', x + CELL_SIZE/2 - 5, y + CELL_SIZE/2 + 5);
+                    } else {
+                        ctxAI.fillStyle = '#2c4a5a';
+                        ctxAI.fillRect(x, y, CELL_SIZE-1, CELL_SIZE-1);
+                    }
+                    ctxAI.strokeStyle = '#7e9aae';
+                    ctxAI.strokeRect(x, y, CELL_SIZE-1, CELL_SIZE-1);
+                }
+            }
+        }
+
+        function checkShipDestroyed(board, hitsBoard, x, y) {
+            let shipCells = [];
+            let queue = [{x, y}];
+            let visited = Array(SIZE).fill().map(() => Array(SIZE).fill(false));
+            while (queue.length) {
+                let {x: cx, y: cy} = queue.shift();
+                if (visited[cy][cx]) continue;
+                visited[cy][cx] = true;
+                if (board[cy][cx] === SHIP) {
+                    shipCells.push({x: cx, y: cy});
+                    for (let dx = -1; dx <= 1; dx++) {
+                        for (let dy = -1; dy <= 1; dy++) {
+                            if ((dx === 0) !== (dy === 0)) {
+                                let nx = cx + dx, ny = cy + dy;
+                                if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE && board[ny][nx] === SHIP && !visited[ny][nx]) {
+                                    queue.push({x: nx, y: ny});
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            for (let cell of shipCells) {
+                if (hitsBoard[cell.y][cell.x] !== HIT) return false;
+            }
+            return true;
+        }
+
+        function markShipDestroyed(board, hitsBoard, x, y) { /* визуализация уже есть */ }
+
+        function makeShot(board, shotsBoard, x, y, isPlayerShot) {
+            if (gameOver) return { hit: false, destroyed: false };
+            if (shotsBoard[y][x] !== EMPTY) return { hit: false, destroyed: false };
+            if (board[y][x] === SHIP) {
+                shotsBoard[y][x] = HIT;
+                if (isPlayerShot) {
+                    aiShipsRemaining--;
+                    if (sfxEnabled) playHitSound();
+                } else {
+                    playerShipsRemaining--;
+                    if (sfxEnabled) playHitSound();
+                }
+                updateScoreUI();
+                let destroyed = checkShipDestroyed(board, shotsBoard, x, y);
+                if (destroyed) markShipDestroyed(board, shotsBoard, x, y);
+                return { hit: true, destroyed: destroyed };
+            } else {
+                shotsBoard[y][x] = MISS;
+                if (sfxEnabled) playMissSound();
+                return { hit: false, destroyed: false };
+            }
+        }
+
+        function playerMove(x, y) {
+            if (gameOver) return;
+            if (!playerTurn) return;
+            if (playerShots[y][x] !== EMPTY) return;
+            let result = makeShot(aiBoard, playerShots, x, y, true);
+            drawAIBoard();
+            if (result.hit) {
+                statusText.textContent = 'Попадание! 🎯';
+                if (aiShipsRemaining === 0) {
+                    gameOver = true;
+                    statusText.textContent = 'Вы победили! 🏆';
+                    if (sfxEnabled) playWinSound();
+                    return;
+                }
+                playerTurn = true;
+            } else {
+                statusText.textContent = 'Промах! Ход ИИ...';
+                playerTurn = false;
+                setTimeout(aiMove, 500);
+            }
+            if (aiShipsRemaining === 0) {
+                gameOver = true;
+                statusText.textContent = 'Вы победили! 🏆';
+                if (sfxEnabled) playWinSound();
+            }
+        }
+
+        // Функция для получения "умной" случайной клетки (для сложного уровня)
+        function getSmartRandomTarget() {
+            let bestScore = -1;
+            let bestCells = [];
+            for (let i = 0; i < SIZE; i++) {
+                for (let j = 0; j < SIZE; j++) {
+                    if (aiShots[i][j] !== EMPTY) continue;
+                    let score = 0;
+                    // Количество соседних клеток (4 направления), которые ещё не обстреляны
+                    const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+                    for (let [dx, dy] of dirs) {
+                        let nx = j + dx, ny = i + dy;
+                        if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE && aiShots[ny][nx] === EMPTY) {
+                            score++;
+                        }
+                    }
+                    // Дополнительный приоритет на "шахматку" (сумма координат чётная)
+                    if ((i + j) % 2 === 0) score += 0.5;
+                    // Небольшой случайный элемент для разнообразия
+                    score += Math.random() * 0.1;
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestCells = [{x: j, y: i}];
+                    } else if (Math.abs(score - bestScore) < 0.01) {
+                        bestCells.push({x: j, y: i});
+                    }
+                }
+            }
+            if (bestCells.length === 0) return null;
+            return bestCells[Math.floor(Math.random() * bestCells.length)];
+        }
+
+        function aiMove() {
+            if (gameOver) return;
+            if (playerTurn) return;
+
+            let target = null;
+
+            if (difficulty === 'easy') {
+                // Лёгкий: всегда случайный выстрел
+                let empty = [];
+                for (let i = 0; i < SIZE; i++)
+                    for (let j = 0; j < SIZE; j++)
+                        if (aiShots[i][j] === EMPTY) empty.push({x: j, y: i});
+                if (empty.length === 0) return;
+                target = empty[Math.floor(Math.random() * empty.length)];
+            } 
+            else if (difficulty === 'medium') {
+                // Средний: очередь приоритетов, иначе случайный
+                if (aiTargetQueue.length > 0) {
+                    target = aiTargetQueue.shift();
+                    if (aiShots[target.y][target.x] !== EMPTY) target = null;
+                }
+                if (!target) {
+                    let empty = [];
+                    for (let i = 0; i < SIZE; i++)
+                        for (let j = 0; j < SIZE; j++)
+                            if (aiShots[i][j] === EMPTY) empty.push({x: j, y: i});
+                    if (empty.length === 0) return;
+                    target = empty[Math.floor(Math.random() * empty.length)];
+                }
+            } 
+            else { // hard
+                // Сложный: если есть очередь, стреляем по ней, иначе умный случайный
+                if (aiTargetQueue.length > 0) {
+                    target = aiTargetQueue.shift();
+                    if (aiShots[target.y][target.x] !== EMPTY) target = null;
+                }
+                if (!target) {
+                    target = getSmartRandomTarget();
+                    if (!target) return;
+                }
+            }
+
+            let result = makeShot(playerBoard, aiShots, target.x, target.y, false);
+            drawPlayerBoard();
+
+            if (result.hit) {
+                statusText.textContent = 'ИИ попал! 💢';
+                if (playerShipsRemaining === 0) {
+                    gameOver = true;
+                    statusText.textContent = 'ИИ победил! 🤖';
+                    if (sfxEnabled) playLoseSound();
+                    return;
+                }
+                // Добавляем соседей в очередь (только для medium и hard, в easy игнорируем)
+                if (difficulty !== 'easy') {
+                    let neighbors = [
+                        {x: target.x+1, y: target.y}, {x: target.x-1, y: target.y},
+                        {x: target.x, y: target.y+1}, {x: target.x, y: target.y-1}
+                    ];
+                    for (let n of neighbors) {
+                        if (n.x >= 0 && n.x < SIZE && n.y >= 0 && n.y < SIZE && aiShots[n.y][n.x] === EMPTY) {
+                            aiTargetQueue.unshift(n);
+                        }
+                    }
+                }
+                playerTurn = false;
+                setTimeout(aiMove, 500);
+            } else {
+                statusText.textContent = 'Ваш ход';
+                playerTurn = true;
+                // Очередь не очищаем
+            }
+
+            if (playerShipsRemaining === 0) {
+                gameOver = true;
+                statusText.textContent = 'ИИ победил! 🤖';
+                if (sfxEnabled) playLoseSound();
+            }
+        }
+
+        function newGame() {
+            randomPlaceShips(playerBoard);
+            randomPlaceShips(aiBoard);
+            for (let i = 0; i < SIZE; i++) {
+                for (let j = 0; j < SIZE; j++) {
+                    playerShots[i][j] = EMPTY;
+                    aiShots[i][j] = EMPTY;
+                }
+            }
+            playerShipsRemaining = 20;
+            aiShipsRemaining = 20;
+            playerTurn = true;
+            gameOver = false;
+            aiTargetQueue = [];
+            drawPlayerBoard();
+            drawAIBoard();
+            updateScoreUI();
+            statusText.textContent = 'Ваш ход';
+        }
+
+        // ========== УПРАВЛЕНИЕ МЕНЮ ==========
+        const mainMenu = document.getElementById('mainMenu');
+        const gameContainer = document.getElementById('gameContainer');
+        const playBtn = document.getElementById('playBtn');
+        const menuSettingsBtn = document.getElementById('menuSettingsBtn');
+        const gameMenuBtn = document.getElementById('gameMenuBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const settingsModal = document.getElementById('settingsModal');
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        const musicToggle = document.getElementById('musicToggle');
+        const sfxToggle = document.getElementById('sfxToggle');
+        const volumeSlider = document.getElementById('volumeSlider');
+
+        // Выбор сложности в меню
+        document.querySelectorAll('.difficulty-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                difficulty = btn.getAttribute('data-diff');
+            });
+        });
+
+        function showGame() {
+            mainMenu.style.display = 'none';
+            gameContainer.classList.add('visible');
+            newGame();
+        }
+
+        function showMenu() {
+            mainMenu.style.display = 'flex';
+            gameContainer.classList.remove('visible');
+            stopMusic();
+            if (musicEnabled && audioCtx) startMusic();
+        }
+
+        playBtn.addEventListener('click', () => {
+            if (!isAudioInit) initAudio();
+            showGame();
+        });
+        gameMenuBtn.addEventListener('click', showMenu);
+        resetBtn.addEventListener('click', () => {
+            if (!gameContainer.classList.contains('visible')) return;
+            newGame();
+        });
+        menuSettingsBtn.addEventListener('click', () => {
+            if (!isAudioInit) initAudio();
+            settingsModal.style.display = 'flex';
+        });
+        closeSettingsBtn.addEventListener('click', () => settingsModal.style.display = 'none');
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) settingsModal.style.display = 'none';
+        });
+
+        musicToggle.addEventListener('change', (e) => setMusicEnabled(e.target.checked));
+        sfxToggle.addEventListener('change', (e) => setSfxEnabled(e.target.checked));
+        volumeSlider.addEventListener('input', (e) => setMusicVolume(e.target.value / 100));
+        document.querySelectorAll('.melody-btn').forEach(btn => {
+            btn.addEventListener('click', () => setMelody(parseInt(btn.dataset.melody)));
+        });
+
+        loadAudioSettings();
+        setMusicVolume(musicVolume);
+        setMusicEnabled(musicEnabled);
+        setSfxEnabled(sfxEnabled);
+
+        function enableAudioOnUserInteraction() {
+            initAudio();
+            document.removeEventListener('click', enableAudioOnUserInteraction);
+            document.removeEventListener('touchstart', enableAudioOnUserInteraction);
+        }
+        document.addEventListener('click', enableAudioOnUserInteraction);
+        document.addEventListener('touchstart', enableAudioOnUserInteraction);
+
+        // Обработка кликов по полю ИИ
+        aiCanvas.addEventListener('click', (e) => {
+            if (!gameContainer.classList.contains('visible')) return;
+            if (gameOver) return;
+            if (!playerTurn) return;
+            const rect = aiCanvas.getBoundingClientRect();
+            const scale = aiCanvas.width / rect.width;
+            let clickX = (e.clientX - rect.left) * scale;
+            let clickY = (e.clientY - rect.top) * scale;
+            let col = Math.floor(clickX / CELL_SIZE);
+            let row = Math.floor(clickY / CELL_SIZE);
+            if (col >= 0 && col < SIZE && row >= 0 && row < SIZE) {
+                if (playerShots[row][col] === EMPTY) playerMove(col, row);
+            }
+        });
+        aiCanvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!gameContainer.classList.contains('visible')) return;
+            if (gameOver) return;
+            if (!playerTurn) return;
+            const rect = aiCanvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const scale = aiCanvas.width / rect.width;
+            let clickX = (touch.clientX - rect.left) * scale;
+            let clickY = (touch.clientY - rect.top) * scale;
+            let col = Math.floor(clickX / CELL_SIZE);
+            let row = Math.floor(clickY / CELL_SIZE);
+            if (col >= 0 && col < SIZE && row >= 0 && row < SIZE) {
+                if (playerShots[row][col] === EMPTY) playerMove(col, row);
+            }
+        }, { passive: false });
+
+        // Изначально показываем меню
+        mainMenu.style.display = 'flex';
+        gameContainer.classList.remove('visible');
+    })();
+</script>
+</body>
+</html>

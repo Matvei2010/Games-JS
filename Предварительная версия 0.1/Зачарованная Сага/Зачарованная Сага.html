@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Зачарованная Сага — Idle магическое приключение</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0c1c, #1a1a2f);
+            font-family: 'Segoe UI', 'Quicksand', 'Trebuchet MS', sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #f3e9d2;
+        }
+
+        /* контейнер */
+        .game-wrapper {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(15, 12, 28, 0.7);
+            backdrop-filter: blur(2px);
+            border-radius: 48px;
+            padding: 20px 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border: 1px solid #b48c5c;
+        }
+
+        /* шапка */
+        .header-stats {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            background: #1e1b2fcc;
+            border-radius: 60px;
+            padding: 12px 24px;
+            margin-bottom: 28px;
+            gap: 20px;
+            border-bottom: 2px solid #c9a87b;
+        }
+
+        .stat-card {
+            background: #2a253b;
+            padding: 6px 20px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            box-shadow: inset 0 1px 3px #00000044, 0 4px 8px black;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #e6cfa0;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffd966, #ffaa33);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        button {
+            background: #6b3f2c;
+            border: none;
+            font-family: inherit;
+            font-weight: bold;
+            padding: 8px 18px;
+            border-radius: 40px;
+            color: #ffefcf;
+            cursor: pointer;
+            transition: 0.1s linear;
+            box-shadow: 0 4px 0 #3e251b;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #3e251b;
+        }
+
+        .btn-gold {
+            background: #a5723e;
+            color: #2d1f0c;
+            box-shadow: 0 4px 0 #5e3a1a;
+        }
+
+        /* сетка */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 800px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: #1f1b2ed9;
+            border-radius: 32px;
+            padding: 18px;
+            backdrop-filter: blur(4px);
+            border: 1px solid #6f5a42;
+        }
+
+        .panel h2 {
+            margin-top: 0;
+            font-size: 1.6rem;
+            border-left: 6px solid #e5b86b;
+            padding-left: 15px;
+            font-weight: 600;
+        }
+
+        /* битва */
+        .enemy-card {
+            background: #1f1a2a;
+            border-radius: 28px;
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 24px;
+            box-shadow: 0 5px 12px black;
+        }
+
+        .enemy-name {
+            font-size: 1.9rem;
+            font-weight: bold;
+            text-shadow: 0 2px 0 #6a2e2e;
+        }
+
+        .boss-tag {
+            background: #a32f2f;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 60px;
+            font-size: 0.8rem;
+            margin-left: 12px;
+        }
+
+        .hp-bar {
+            background: #2f1f2b;
+            height: 20px;
+            border-radius: 30px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+
+        .hp-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #c45c2c, #e0904c);
+            transition: width 0.2s;
+        }
+
+        /* маги */
+        .mages-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 10px;
+        }
+
+        .mage-card {
+            background: #2a233b;
+            border-radius: 30px;
+            padding: 12px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .mage-info h3 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .mage-info p {
+            margin: 4px 0 0;
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .damage-stat {
+            background: #1b162b;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-weight: bold;
+        }
+
+        /* снаряжение */
+        .equip-slot {
+            background: #120e1f;
+            margin: 8px 0;
+            padding: 8px 14px;
+            border-radius: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .achievement {
+            background: #120e1f77;
+            margin: 8px 0;
+            padding: 8px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+        }
+
+        .complete {
+            color: #ffcf6e;
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+
+        button.small {
+            padding: 4px 12px;
+            font-size: 0.8rem;
+        }
+
+        .footer-note {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #bdaa83;
+        }
+    </style>
+</head>
+<body>
+<div class="game-wrapper">
+    <div class="header-stats">
+        <div class="stat-card">✨ <span class="stat-label">ЗОЛОТО</span> <span class="stat-value" id="goldAmount">0</span></div>
+        <div class="stat-card">⚔️ <span class="stat-label">ПОБЕД</span> <span class="stat-value" id="totalKills">0</span></div>
+        <div class="stat-card">🏆 <span class="stat-label">БОССОВ</span> <span class="stat-value" id="bossDefeated">0</span></div>
+        <button id="resetGameBtn" class="small">✨ Перерождение</button>
+    </div>
+
+    <div class="dashboard">
+        <!-- ЛЕВАЯ КОЛОНКА: БИТВА + ЭКИПИРОВКА -->
+        <div class="panel">
+            <h2>🔥 Текущая битва</h2>
+            <div class="enemy-card" id="enemyPanel">
+                <div class="enemy-name" id="enemyName">Теневой слизень</div>
+                <div class="hp-bar"><div class="hp-fill" id="enemyHpFill" style="width:100%"></div></div>
+                <div id="enemyHpText">❤️ HP: 100 / 100</div>
+                <div id="enemyRewardInfo">💰 награда: +15 золота</div>
+            </div>
+            
+            <h2>🧙‍♂️ Отряд магов (Idle DPS)</h2>
+            <div id="magesContainer" class="mages-list"></div>
+            
+            <h2>🛡️ Магическое снаряжение</h2>
+            <div id="equipmentContainer"></div>
+        </div>
+
+        <!-- ПРАВАЯ КОЛОНКА: ДОСТИЖЕНИЯ + ОФЛАЙН -->
+        <div class="panel">
+            <h2>🏅 Достижения Саги</h2>
+            <div id="achievementsList"></div>
+            <h2>📜 Магическая лавка</h2>
+            <button id="buyMageBtn" class="btn-gold" style="width:100%; margin-bottom:12px;">🌟 Нанять нового мага (500 золота)</button>
+            <button id="buyStaffBtn" class="btn-gold" style="width:100%;">🔮 Посох Древних (300 золота)</button>
+            <div class="footer-note">⚡ Ресурсы копятся даже в офлайне!<br>Заклинания усиливаются с уровнем магов.</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ********** ЗАЧАРОВАННАЯ САГА: IDLE RPG **********
+    // ---------- НАЧАЛЬНЫЕ ДАННЫЕ ----------
+    let gameData = {
+        gold: 350,
+        totalKills: 0,
+        bossDefeated: 0,
+        // маги
+        mages: [
+            { id: "pyro", name: "Пиромант Эдгар", type: "огонь", level: 1, baseDamage: 12, costUpgrade: 40, unlocked: true, icon: "🔥" },
+            { id: "cryo", name: "Криомант Лисса", type: "лёд", level: 1, baseDamage: 10, costUpgrade: 40, unlocked: true, icon: "❄️" }
+        ],
+        // доступные для найма маги
+        lockedMages: [
+            { id: "arcane", name: "Арканист Моргана", type: "тайна", baseDamage: 15, costUnlock: 500, icon: "🌀" },
+            { id: "druid", name: "Друид Эльвин", type: "природа", baseDamage: 13, costUnlock: 700, icon: "🌿" }
+        ],
+        // экипировка (бусты)
+        equipment: {
+            staff: { owned: false, bonusDamage: 0, name: "Посох Древних", bonus: 8, cost: 300 },
+            // можно добавить больше, но для демо хватит
+        },
+        // текущий враг
+        currentEnemy: null,
+        // достижения
+        achievements: {
+            "gold_1000": { name: "💰 Богатство", desc: "Накопить 1000 золота", achieved: false, current: 0, need: 1000 },
+            "kills_50": { name: "⚔️ Истребитель", desc: "Победить 50 врагов", achieved: false, current: 0, need: 50 },
+            "boss_5": { name: "👑 Укротитель боссов", desc: "Одолеть 5 боссов", achieved: false, current: 0, need: 5 },
+            "mage_lvl10": { name: "🧙 Могущество", desc: "Любой маг достиг 10 уровня", achieved: false, current: 0, need: 10 }
+        }
+    };
+
+    // инициализация врага
+    function createEnemy(isBoss = false) {
+        const baseHp = 70 + Math.floor(gameData.totalKills * 1.8);
+        if (isBoss) {
+            return {
+                name: "⭐ Древний Лич ⭐",
+                hp: Math.floor(baseHp * 2.2),
+                maxHp: Math.floor(baseHp * 2.2),
+                isBoss: true,
+                rewardGold: 80 + Math.floor(gameData.bossDefeated * 25)
+            };
+        } else {
+            const names = ["Теневой слизень", "Пылающий дух", "Каменный голем", "Лесной тролль", "Призрачный волк"];
+            const idx = Math.floor(Math.random() * names.length);
+            return {
+                name: names[idx],
+                hp: baseHp,
+                maxHp: baseHp,
+                isBoss: false,
+                rewardGold: 15 + Math.floor(Math.random() * 20) + Math.floor(gameData.totalKills / 15)
+            };
+        }
+    }
+
+    // Сохранение и загрузка
+    function saveGame() {
+        localStorage.setItem("enchantedSagaSave", JSON.stringify({
+            gold: gameData.gold,
+            totalKills: gameData.totalKills,
+            bossDefeated: gameData.bossDefeated,
+            mages: gameData.mages,
+            lockedMages: gameData.lockedMages,
+            equipment: gameData.equipment,
+            achievements: gameData.achievements,
+            currentEnemy: gameData.currentEnemy
+        }));
+    }
+
+    function loadGame() {
+        const saved = localStorage.getItem("enchantedSagaSave");
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                gameData.gold = data.gold;
+                gameData.totalKills = data.totalKills;
+                gameData.bossDefeated = data.bossDefeated;
+                gameData.mages = data.mages;
+                gameData.lockedMages = data.lockedMages;
+                gameData.equipment = data.equipment;
+                gameData.achievements = data.achievements;
+                if (data.currentEnemy) gameData.currentEnemy = data.currentEnemy;
+            } catch(e) {}
+        }
+        // синхронизация полей достижений
+        if (!gameData.achievements.gold_1000) initAchiev();
+        function initAchiev() {
+            gameData.achievements = {
+                "gold_1000": { name: "💰 Богатство", desc: "Накопить 1000 золота", achieved: false, current: 0, need: 1000 },
+                "kills_50": { name: "⚔️ Истребитель", desc: "Победить 50 врагов", achieved: false, current: 0, need: 50 },
+                "boss_5": { name: "👑 Укротитель боссов", desc: "Одолеть 5 боссов", achieved: false, current: 0, need: 5 },
+                "mage_lvl10": { name: "🧙 Могущество", desc: "Любой маг достиг 10 уровня", achieved: false, current: 0, need: 10 }
+            };
+        }
+        if (!gameData.currentEnemy) gameData.currentEnemy = createEnemy(false);
+        // убеждаемся, что оборудование имеет структуру
+        if (!gameData.equipment.staff) gameData.equipment.staff = { owned: false, bonusDamage: 0, name: "Посох Древних", bonus: 8, cost: 300 };
+        updateAchievementsProgress();
+    }
+
+    function initGame() {
+        loadGame();
+        if (!gameData.currentEnemy) gameData.currentEnemy = createEnemy(false);
+        updateUI();
+        startIdleLoop();
+        handleOfflineProgress();
+    }
+
+    // Общий DPS отряда
+    function getTotalPartyDamage() {
+        let dmg = 0;
+        for (let m of gameData.mages) {
+            if (m.unlocked) {
+                let bonus = 0;
+                if (gameData.equipment.staff.owned) bonus += gameData.equipment.staff.bonus;
+                dmg += (m.baseDamage * m.level) + bonus;
+            }
+        }
+        return Math.max(1, dmg);
+    }
+
+    // Пассивный доход золота в секунду (от уровня магов)
+    function getGoldPerSecond() {
+        let income = 0;
+        for (let m of gameData.mages) {
+            if (m.unlocked) income += m.level * 0.6;
+        }
+        if (gameData.equipment.staff.owned) income += 2;
+        return Math.floor(income * 10) / 10;
+    }
+
+    // Атака врага (каждый тик)
+    function attackTick() {
+        if (!gameData.currentEnemy) gameData.currentEnemy = createEnemy(false);
+        let dmg = getTotalPartyDamage();
+        let enemy = gameData.currentEnemy;
+        if (enemy.hp <= 0) return; // уже мертв, будет новый
+        enemy.hp -= dmg;
+        if (enemy.hp <= 0) {
+            // ПОБЕДА
+            enemy.hp = 0;
+            // награда
+            let reward = enemy.rewardGold;
+            gameData.gold += reward;
+            gameData.totalKills++;
+            // если босс
+            if (enemy.isBoss) {
+                gameData.bossDefeated++;
+            }
+            // проверка достижений
+            updateAchievementsProgress();
+            // генерация нового врага (каждые 5 побед - босс)
+            let isNextBoss = (gameData.totalKills % 5 === 0 && gameData.totalKills > 0);
+            gameData.currentEnemy = createEnemy(isNextBoss);
+            // дополнительно уведомление в UI
+        }
+        // обновление UI
+        updateUI();
+        saveGame();
+    }
+
+    // Прокачка мага
+    function upgradeMage(index) {
+        let mage = gameData.mages[index];
+        if (!mage.unlocked) return;
+        let cost = mage.costUpgrade;
+        if (gameData.gold >= cost) {
+            gameData.gold -= cost;
+            mage.level++;
+            mage.costUpgrade = Math.floor(mage.costUpgrade * 1.25);
+            if (mage.costUpgrade < 30) mage.costUpgrade = 40;
+            updateUI();
+            saveGame();
+            checkMageLevelAchievement();
+        }
+    }
+    
+    function checkMageLevelAchievement() {
+        let maxLvl = Math.max(...gameData.mages.map(m => m.unlocked ? m.level : 0));
+        if (maxLvl >= 10 && !gameData.achievements.mage_lvl10.achieved) {
+            gameData.achievements.mage_lvl10.achieved = true;
+            gameData.gold += 300;
+            updateUI();
+        }
+        updateAchievementsProgress();
+    }
+
+    // Покупка нового мага
+    function unlockMage() {
+        if (gameData.lockedMages.length === 0) {
+            alert("Все маги уже в отряде!");
+            return;
+        }
+        let newMage = gameData.lockedMages[0];
+        if (gameData.gold >= newMage.costUnlock) {
+            gameData.gold -= newMage.costUnlock;
+            gameData.mages.push({
+                id: newMage.id,
+                name: newMage.name,
+                type: newMage.type,
+                level: 1,
+                baseDamage: newMage.baseDamage,
+                costUpgrade: 45,
+                unlocked: true,
+                icon: newMage.icon
+            });
+            gameData.lockedMages.shift();
+            updateUI();
+            saveGame();
+        } else {
+            alert("Недостаточно золота!");
+        }
+    }
+
+    // покупка посоха
+    function buyStaff() {
+        let staff = gameData.equipment.staff;
+        if (!staff.owned && gameData.gold >= staff.cost) {
+            gameData.gold -= staff.cost;
+            staff.owned = true;
+            updateUI();
+            saveGame();
+        } else if(staff.owned) {
+            alert("Посох уже в руках мага!");
+        } else alert("Не хватает золота");
+    }
+
+    // Обновление прогресса достижений
+    function updateAchievementsProgress() {
+        let a = gameData.achievements;
+        a.gold_1000.current = gameData.gold;
+        if (!a.gold_1000.achieved && gameData.gold >= 1000) {
+            a.gold_1000.achieved = true;
+            gameData.gold += 200;
+        }
+        a.kills_50.current = gameData.totalKills;
+        if (!a.kills_50.achieved && gameData.totalKills >= 50) {
+            a.kills_50.achieved = true;
+            gameData.gold += 400;
+        }
+        a.boss_5.current = gameData.bossDefeated;
+        if (!a.boss_5.achieved && gameData.bossDefeated >= 5) {
+            a.boss_5.achieved = true;
+            gameData.gold += 600;
+        }
+        let maxLvl = Math.max(...gameData.mages.map(m => m.unlocked ? m.level : 0));
+        a.mage_lvl10.current = maxLvl;
+        if (!a.mage_lvl10.achieved && maxLvl >= 10) {
+            a.mage_lvl10.achieved = true;
+            gameData.gold += 300;
+        }
+        saveGame();
+    }
+
+    // Офлайн прогресс
+    function handleOfflineProgress() {
+        let last = localStorage.getItem("lastActive");
+        if (last) {
+            let diff = (Date.now() - parseInt(last)) / 1000;
+            if (diff > 2 && diff < 86400) {
+                let seconds = Math.min(diff, 3600*4); // максимум 4 часа оффлайн
+                // симуляция боев и дохода
+                let goldGain = 0;
+                let killsGain = 0;
+                let bossGain = 0;
+                let simulatedEnemy = gameData.currentEnemy ? { ...gameData.currentEnemy } : createEnemy(false);
+                let tempGold = gameData.gold;
+                let tempKills = gameData.totalKills;
+                let tempBoss = gameData.bossDefeated;
+                let currentHP = simulatedEnemy.hp;
+                let partyDPS = getTotalPartyDamage();
+                for (let i = 0; i < seconds; i++) {
+                    if (partyDPS <= 0) partyDPS = 1;
+                    currentHP -= partyDPS;
+                    if (currentHP <= 0) {
+                        // убийство
+                        tempKills++;
+                        if (simulatedEnemy.isBoss) tempBoss++;
+                        let reward = simulatedEnemy.rewardGold;
+                        tempGold += reward;
+                        let isBossWave = (tempKills % 5 === 0 && tempKills > 0);
+                        simulatedEnemy = createEnemy(isBossWave);
+                        currentHP = simulatedEnemy.hp;
+                        partyDPS = getTotalPartyDamage();
+                    }
+                    // пассивный доход золота
+                    let gps = getGoldPerSecond();
+                    tempGold += gps;
+                }
+                goldGain = Math.floor(tempGold - gameData.gold);
+                killsGain = tempKills - gameData.totalKills;
+                bossGain = tempBoss - gameData.bossDefeated;
+                if (goldGain > 0 || killsGain > 0) {
+                    gameData.gold = Math.floor(tempGold);
+                    gameData.totalKills = tempKills;
+                    gameData.bossDefeated = tempBoss;
+                    gameData.currentEnemy = simulatedEnemy;
+                    updateAchievementsProgress();
+                    saveGame();
+                    updateUI();
+                    let msg = `🌟 За время отсутствия вы получили:\n💰 ${goldGain} золота\n⚔️ ${killsGain} побед\n👑 ${bossGain} боссов`;
+                    setTimeout(() => alert(msg), 200);
+                }
+            }
+        }
+        localStorage.setItem("lastActive", Date.now().toString());
+    }
+
+    // Отрисовка UI
+    function updateUI() {
+        document.getElementById("goldAmount").innerText = Math.floor(gameData.gold);
+        document.getElementById("totalKills").innerText = gameData.totalKills;
+        document.getElementById("bossDefeated").innerText = gameData.bossDefeated;
+
+        let enemy = gameData.currentEnemy;
+        if (enemy) {
+            let percent = (enemy.hp / enemy.maxHp) * 100;
+            document.getElementById("enemyName").innerHTML = enemy.name + (enemy.isBoss ? '<span class="boss-tag">БОСС</span>' : '');
+            document.getElementById("enemyHpFill").style.width = Math.max(0, percent) + "%";
+            document.getElementById("enemyHpText").innerHTML = `❤️ HP: ${Math.max(0, Math.floor(enemy.hp))} / ${enemy.maxHp}`;
+            document.getElementById("enemyRewardInfo").innerHTML = `💰 награда: +${enemy.rewardGold} золота`;
+        }
+
+        // маги
+        let magesHtml = "";
+        gameData.mages.forEach((m, idx) => {
+            if (m.unlocked) {
+                let dmgContribution = (m.baseDamage * m.level) + (gameData.equipment.staff.owned ? gameData.equipment.staff.bonus : 0);
+                magesHtml += `
+                    <div class="mage-card">
+                        <div class="mage-info">
+                            <h3>${m.icon} ${m.name} (${m.type}) lvl ${m.level}</h3>
+                            <p>💥 урон: ${Math.floor(dmgContribution)} | 📈 улучшение: ${m.costUpgrade} 🪙</p>
+                        </div>
+                        <button class="small" data-upgrade="${idx}">🔮 Повысить уровень</button>
+                    </div>
+                `;
+            }
+        });
+        document.getElementById("magesContainer").innerHTML = magesHtml;
+        document.querySelectorAll("[data-upgrade]").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                let idx = parseInt(btn.dataset.upgrade);
+                upgradeMage(idx);
+            });
+        });
+
+        // снаряжение
+        let equipHtml = `<div class="equip-slot">🔮 ${gameData.equipment.staff.name} +${gameData.equipment.staff.bonus} к урону отряда `;
+        if (gameData.equipment.staff.owned) equipHtml += `<span style="color:#ffc857;">(Экипирован)</span>`;
+        else equipHtml += `<button id="buyStaffNow">Купить (${gameData.equipment.staff.cost}🪙)</button>`;
+        equipHtml += `</div>`;
+        document.getElementById("equipmentContainer").innerHTML = equipHtml;
+        const staffBtn = document.getElementById("buyStaffNow");
+        if (staffBtn) staffBtn.onclick = () => buyStaff();
+
+        // достижения
+        let achHtml = "";
+        for (let key in gameData.achievements) {
+            let a = gameData.achievements[key];
+            let progress = `${a.current}/${a.need}`;
+            let statusClass = a.achieved ? "complete" : "";
+            achHtml += `<div class="achievement ${statusClass}">🏅 ${a.name} — ${a.desc} (${progress}) ${a.achieved ? "✅" : "⏳"}</div>`;
+        }
+        document.getElementById("achievementsList").innerHTML = achHtml;
+    }
+
+    // Idle цикл
+    let intervalId = null;
+    function startIdleLoop() {
+        if (intervalId) clearInterval(intervalId);
+        intervalId = setInterval(() => {
+            attackTick();
+            // пассивный доход золота (каждую секунду)
+            let gps = getGoldPerSecond();
+            gameData.gold += gps;
+            if (gameData.gold < 0) gameData.gold = 0;
+            updateAchievementsProgress();
+            updateUI();
+            saveGame();
+            localStorage.setItem("lastActive", Date.now().toString());
+        }, 1000);
+    }
+
+    // Сброс игры (перерождение с сохранением структур)
+    function resetGame() {
+        if (confirm("Перерождение обнулит прогресс, но оставит базовых магов. Начать новую сагу?")) {
+            gameData.gold = 350;
+            gameData.totalKills = 0;
+            gameData.bossDefeated = 0;
+            gameData.mages = [
+                { id: "pyro", name: "Пиромант Эдгар", type: "огонь", level: 1, baseDamage: 12, costUpgrade: 40, unlocked: true, icon: "🔥" },
+                { id: "cryo", name: "Криомант Лисса", type: "лёд", level: 1, baseDamage: 10, costUpgrade: 40, unlocked: true, icon: "❄️" }
+            ];
+            gameData.lockedMages = [
+                { id: "arcane", name: "Арканист Моргана", type: "тайна", baseDamage: 15, costUnlock: 500, icon: "🌀" },
+                { id: "druid", name: "Друид Эльвин", type: "природа", baseDamage: 13, costUnlock: 700, icon: "🌿" }
+            ];
+            gameData.equipment = { staff: { owned: false, bonusDamage: 0, name: "Посох Древних", bonus: 8, cost: 300 } };
+            gameData.achievements = {
+                "gold_1000": { name: "💰 Богатство", desc: "Накопить 1000 золота", achieved: false, current: 0, need: 1000 },
+                "kills_50": { name: "⚔️ Истребитель", desc: "Победить 50 врагов", achieved: false, current: 0, need: 50 },
+                "boss_5": { name: "👑 Укротитель боссов", desc: "Одолеть 5 боссов", achieved: false, current: 0, need: 5 },
+                "mage_lvl10": { name: "🧙 Могущество", desc: "Любой маг достиг 10 уровня", achieved: false, current: 0, need: 10 }
+            };
+            gameData.currentEnemy = createEnemy(false);
+            saveGame();
+            updateUI();
+        }
+    }
+
+    // привязка кнопок
+    document.getElementById("resetGameBtn").addEventListener("click", resetGame);
+    document.getElementById("buyMageBtn").addEventListener("click", unlockMage);
+    document.getElementById("buyStaffBtn").addEventListener("click", buyStaff);
+    
+    window.addEventListener("beforeunload", () => {
+        localStorage.setItem("lastActive", Date.now().toString());
+        saveGame();
+    });
+
+    initGame();
+</script>
+</body>
+</html>

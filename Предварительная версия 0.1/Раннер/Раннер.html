@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Бесконечный раннер | JS Game</title>
+    <style>
+        * {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background: linear-gradient(145deg, #0a2f3a 0%, #05161e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Courier New', 'VT323', monospace;
+            margin: 0;
+            padding: 20px;
+        }
+        .game-container {
+            background: #1a2a2f;
+            padding: 20px;
+            border-radius: 32px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.5);
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 16px;
+            box-shadow: 0 0 0 3px #f4c542, 0 10px 25px rgba(0,0,0,0.3);
+            cursor: pointer;
+        }
+        .info-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-top: 16px;
+            background: #0f1c22;
+            padding: 10px 20px;
+            border-radius: 40px;
+            color: #e3f2e8;
+            font-weight: bold;
+            font-size: 1.4rem;
+            gap: 20px;
+        }
+        .score-box {
+            background: #00000066;
+            padding: 4px 16px;
+            border-radius: 32px;
+            font-family: monospace;
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+        }
+        .restart-btn {
+            background: #f4c542;
+            border: none;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 1rem;
+            padding: 6px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.1s linear;
+            color: #1e2f3a;
+        }
+        .restart-btn:hover {
+            background: #ffdc7a;
+            transform: scale(0.97);
+        }
+        .controls-hint {
+            font-size: 0.8rem;
+            color: #9bb7c2;
+            text-align: center;
+            margin-top: 12px;
+        }
+        @media (max-width: 600px) {
+            .info-panel { font-size: 1rem; }
+            .score-box { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+<div>
+    <div class="game-container">
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <div class="info-panel">
+            <span>🏃‍♂️ БЕСКОНЕЧНЫЙ РАННЕР</span>
+            <div class="score-box">СЧЕТ: <span id="scoreValue">0</span></div>
+            <button class="restart-btn" id="restartButton">🔄 СТАРТ</button>
+        </div>
+        <div class="controls-hint">
+            🚀 ПРОБЕЛ / КЛИК МЫШЬЮ / ТАП — ПРЫЖОК | ИГРА БЕСКОНЕЧНАЯ, ЧЕМ ДАЛЬШЕ — ТЕМ СЛОЖНЕЕ
+        </div>
+    </div>
+</div>
+
+<script>
+    (function(){
+        // ---------- НАСТРОЙКИ ----------
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreSpan = document.getElementById('scoreValue');
+
+        // Размеры мира
+        const W = 800, H = 400;
+        const GROUND_Y = H - 50;    // уровень земли (низ персонажа)
+        const PLAYER_WIDTH = 28;
+        const PLAYER_HEIGHT = 28;
+        const PLAYER_X = 120;        // фиксированная позиция по X
+
+        // Физика прыжка
+        let playerY = GROUND_Y - PLAYER_HEIGHT;
+        let playerVelY = 0;
+        let isJumping = false;
+        const GRAVITY = 0.8;
+        const JUMP_POWER = -11;
+
+        // Препятствия
+        let obstacles = [];
+        let frameCounter = 0;
+        let spawnGap = 70;           // начальный интервал между препятствиями (кадры)
+        let baseSpawnGap = 70;
+        let score = 0;
+        let gameRunning = true;
+        let animationId = null;
+
+        // Сложность: чем больше очков, тем чаще препятствия
+        let speed = 5;               // скорость движения препятствий вправо->влево (пикс/кадр)
+        let baseSpeed = 5;
+        let difficultyRamp = 1;
+
+        // Препятствия: x, width, height, type (для визуала)
+        class Obstacle {
+            constructor(x, width, height, type = 'cactus') {
+                this.x = x;
+                this.width = width;
+                this.height = height;
+                this.type = type;
+            }
+        }
+
+        // Вспомогательные функции
+        function updateScoreUI() {
+            scoreSpan.innerText = Math.floor(score);
+        }
+
+        // Генерация препятствия с рандомными параметрами
+        function spawnObstacle() {
+            // разные типы: кактус, камень, яма (визуально)
+            let type = Math.random() < 0.7 ? 'cactus' : 'rock';
+            let width = (type === 'cactus') ? 12 + Math.random() * 10 : 16;
+            let height = (type === 'cactus') ? 22 + Math.random() * 8 : 14;
+            // убедимся что препятствие стоит на земле
+            obstacles.push(new Obstacle(W, width, height, type));
+        }
+
+        // Сброс игры
+        function restartGame() {
+            gameRunning = true;
+            score = 0;
+            speed = baseSpeed;
+            spawnGap = baseSpawnGap;
+            obstacles = [];
+            playerY = GROUND_Y - PLAYER_HEIGHT;
+            playerVelY = 0;
+            isJumping = false;
+            frameCounter = 0;
+            updateScoreUI();
+            // небольшая задержка перед спавном первого препятствия
+            for(let i=0;i<3;i++) frameCounter = spawnGap-10; // сразу начнём генерить
+        }
+
+        // Проверка коллизии (прямоугольник игрока и препятствия)
+        function checkCollision(playerRect, obs) {
+            // игрок
+            const playerLeft = PLAYER_X;
+            const playerRight = PLAYER_X + PLAYER_WIDTH;
+            const playerTop = playerY;
+            const playerBottom = playerY + PLAYER_HEIGHT;
+
+            const obsLeft = obs.x;
+            const obsRight = obs.x + obs.width;
+            const obsTop = GROUND_Y - obs.height;
+            const obsBottom = GROUND_Y;
+
+            if (playerRight > obsLeft && playerLeft < obsRight &&
+                playerBottom > obsTop && playerTop < obsBottom) {
+                return true;
+            }
+            return false;
+        }
+
+        // Обновление логики (движение, спавн, счёт, коллизии)
+        function updateGame() {
+            if (!gameRunning) return;
+
+            // 1. Физика игрока
+            playerVelY += GRAVITY;
+            playerY += playerVelY;
+
+            // ограничение на земле
+            if (playerY >= GROUND_Y - PLAYER_HEIGHT) {
+                playerY = GROUND_Y - PLAYER_HEIGHT;
+                playerVelY = 0;
+                isJumping = false;
+            }
+            // потолок (не улетаем в небеса)
+            if (playerY < 0) {
+                playerY = 0;
+                if (playerVelY < 0) playerVelY = 0;
+            }
+
+            // 2. Движение препятствий и удаление вышедших
+            for (let i = 0; i < obstacles.length; i++) {
+                obstacles[i].x -= speed;
+            }
+            obstacles = obstacles.filter(obs => obs.x + obs.width > 0);
+
+            // 3. Спавн новых препятствий (бесконечная генерация)
+            if (frameCounter <= 0) {
+                spawnObstacle();
+                // динамический интервал спавна: чем больше очков, тем чаще
+                let dynamicGap = Math.max(30, baseSpawnGap - Math.floor(score / 400));
+                frameCounter = dynamicGap;
+            } else {
+                frameCounter--;
+            }
+
+            // 4. Увеличение счета и сложности
+            score += 0.2;   // увеличиваем плавно за время
+            updateScoreUI();
+
+            // сложность: скорость растёт с очками, но ограничена
+            let newSpeed = baseSpeed + Math.floor(score / 600);
+            speed = Math.min(12, newSpeed);
+
+            // 5. Проверка коллизий
+            const playerRect = { x: PLAYER_X, y: playerY, w: PLAYER_WIDTH, h: PLAYER_HEIGHT };
+            for (let obs of obstacles) {
+                if (checkCollision(playerRect, obs)) {
+                    gameRunning = false;
+                    break;
+                }
+            }
+        }
+
+        // ------------------- ОТРИСОВКА ------------------
+        function drawBackground() {
+            // небо с градиентом
+            const grad = ctx.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0, '#c9e6f0');
+            grad.addColorStop(0.7, '#f0e6b2');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+            // облака (декорация)
+            ctx.fillStyle = 'rgba(255,255,240,0.7)';
+            ctx.beginPath();
+            ctx.ellipse(120, 60, 40, 30, 0, 0, Math.PI*2);
+            ctx.ellipse(160, 45, 35, 28, 0, 0, Math.PI*2);
+            ctx.ellipse(200, 60, 40, 30, 0, 0, Math.PI*2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(550, 90, 45, 32, 0, 0, Math.PI*2);
+            ctx.ellipse(595, 75, 38, 28, 0, 0, Math.PI*2);
+            ctx.ellipse(630, 90, 42, 30, 0, 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        function drawGround() {
+            ctx.fillStyle = '#9c7c5b';
+            ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+            // текстура травы
+            ctx.fillStyle = '#6f4f2e';
+            for(let i=0;i<20;i++) {
+                ctx.fillRect(i*40, GROUND_Y-5, 15, 8);
+            }
+            ctx.fillStyle = '#b28b5e';
+            for(let i=0;i<30;i++) {
+                ctx.fillRect(i*27+10, GROUND_Y-3, 8, 6);
+            }
+            // верхняя линия земли
+            ctx.beginPath();
+            ctx.strokeStyle = '#4e3622';
+            ctx.lineWidth = 2;
+            ctx.moveTo(0, GROUND_Y);
+            ctx.lineTo(W, GROUND_Y);
+            ctx.stroke();
+        }
+
+        function drawPlayer() {
+            // бегун (стилизованный)
+            ctx.save();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#2f6b47';
+            ctx.fillRect(PLAYER_X, playerY, PLAYER_WIDTH, PLAYER_HEIGHT);
+            // глаза
+            ctx.fillStyle = 'white';
+            ctx.fillRect(PLAYER_X+20, playerY+6, 6, 6);
+            ctx.fillStyle = '#111';
+            ctx.fillRect(PLAYER_X+22, playerY+8, 3, 3);
+            // волосы/капюшон
+            ctx.fillStyle = '#1e3a2f';
+            ctx.fillRect(PLAYER_X+4, playerY-6, 20, 8);
+            // ноги в движении (анимация по кадрам)
+            let legOffset = (Math.floor(Date.now() / 100) % 2 === 0) ? 4 : 0;
+            ctx.fillStyle = '#1f4d2f';
+            ctx.fillRect(PLAYER_X+5, playerY+PLAYER_HEIGHT-5, 6, 8);
+            ctx.fillRect(PLAYER_X+17, playerY+PLAYER_HEIGHT-5-legOffset, 6, 8+legOffset);
+            ctx.fillStyle = '#b47c44';
+            ctx.fillRect(PLAYER_X+12, playerY+PLAYER_HEIGHT-8, 5, 10);
+            ctx.restore();
+        }
+
+        function drawObstacles() {
+            for (let obs of obstacles) {
+                const obsY = GROUND_Y - obs.height;
+                if (obs.type === 'cactus') {
+                    ctx.fillStyle = '#3b6e47';
+                    ctx.beginPath();
+                    ctx.roundRect(obs.x, obsY, obs.width, obs.height, 4);
+                    ctx.fill();
+                    ctx.fillStyle = '#2b4f32';
+                    for(let i=0;i<3;i++) {
+                        ctx.fillRect(obs.x+obs.width*0.2, obsY+obs.height*0.3 + i*6, obs.width*0.6, 3);
+                    }
+                } else {
+                    ctx.fillStyle = '#5a5a66';
+                    ctx.beginPath();
+                    ctx.ellipse(obs.x+obs.width/2, obsY+obs.height/2, obs.width/2, obs.height/2, 0, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.fillStyle = '#3d3d4a';
+                    ctx.beginPath();
+                    ctx.ellipse(obs.x+obs.width/2+2, obsY+obs.height/2-2, 2, 2, 0, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        function drawGameOverlay() {
+            if (!gameRunning) {
+                ctx.globalAlpha = 0.75;
+                ctx.fillStyle = '#0b1a1f';
+                ctx.fillRect(0, 0, W, H);
+                ctx.globalAlpha = 1;
+                ctx.font = 'bold 34px "Courier New", monospace';
+                ctx.fillStyle = '#f0c674';
+                ctx.shadowBlur = 0;
+                ctx.fillText('GAME OVER', W/2-130, H/2-40);
+                ctx.font = '20px monospace';
+                ctx.fillStyle = '#ddcc99';
+                ctx.fillText(`Ваш счёт: ${Math.floor(score)}`, W/2-90, H/2+20);
+                ctx.font = '16px monospace';
+                ctx.fillStyle = '#bbaa77';
+                ctx.fillText('Нажмите "СТАРТ" или ПРОБЕЛ', W/2-150, H/2+80);
+            }
+        }
+
+        // roundRect helper
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+                if (w < 2 * r) r = w / 2;
+                if (h < 2 * r) r = h / 2;
+                this.moveTo(x+r, y);
+                this.lineTo(x+w-r, y);
+                this.quadraticCurveTo(x+w, y, x+w, y+r);
+                this.lineTo(x+w, y+h-r);
+                this.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+                this.lineTo(x+r, y+h);
+                this.quadraticCurveTo(x, y+h, x, y+h-r);
+                this.lineTo(x, y+r);
+                this.quadraticCurveTo(x, y, x+r, y);
+                return this;
+            };
+        }
+
+        function draw() {
+            drawBackground();
+            drawGround();
+            drawObstacles();
+            drawPlayer();
+            drawGameOverlay();
+
+            // счет на экране поверх для красоты
+            ctx.font = 'bold 22px monospace';
+            ctx.fillStyle = '#2d2f36';
+            ctx.shadowBlur = 0;
+            ctx.fillText(`⚡${Math.floor(score)}`, W-100, 50);
+            ctx.fillStyle = '#f5e6b0';
+            ctx.fillText(`⚡${Math.floor(score)}`, W-102, 48);
+        }
+
+        // ---------- ИГРОВОЙ ЦИКЛ ----------
+        function gameLoop() {
+            updateGame();
+            draw();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        // ---------- УПРАВЛЕНИЕ ----------
+        function jump() {
+            if (!gameRunning) return;
+            // можно прыгать только если стоим на земле
+            if (playerY >= GROUND_Y - PLAYER_HEIGHT - 0.5 && !isJumping) {
+                playerVelY = JUMP_POWER;
+                isJumping = true;
+            }
+        }
+
+        function handleRestart() {
+            restartGame();
+            gameRunning = true;
+        }
+
+        // события
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                e.preventDefault();
+                if (!gameRunning) {
+                    handleRestart();
+                } else {
+                    jump();
+                }
+            }
+        });
+
+        canvas.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!gameRunning) {
+                handleRestart();
+            } else {
+                jump();
+            }
+        });
+        // поддержка тач-экранов
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!gameRunning) {
+                handleRestart();
+            } else {
+                jump();
+            }
+        });
+
+        document.getElementById('restartButton').addEventListener('click', () => {
+            handleRestart();
+        });
+
+        // Инициализация и старт
+        restartGame();
+        gameLoop();
+    })();
+</script>
+</body>
+</html>
