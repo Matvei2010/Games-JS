@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>✨ Magic Puzzle ✨ | Карточная игра на память</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            min-height: 100vh;
+            background: radial-gradient(circle at 20% 30%, #0b0a1f, #02010a);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Quicksand', system-ui, -apple-system, 'Poppins', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* Магический контейнер */
+        .game-container {
+            background: rgba(25, 20, 45, 0.6);
+            backdrop-filter: blur(4px);
+            border-radius: 3rem;
+            padding: 1.5rem 1.8rem 2rem 1.8rem;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(156, 106, 222, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        /* Заголовок и магия */
+        .title {
+            text-align: center;
+            font-size: 2.6rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            margin: 0 0 0.2rem 0;
+            background: linear-gradient(135deg, #f3e6ff, #c084fc, #a855f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .title span {
+            font-size: 2.2rem;
+            filter: drop-shadow(0 0 5px #a855f7);
+        }
+
+        .sub {
+            text-align: center;
+            color: #cdb4ff;
+            font-weight: 500;
+            margin-top: -8px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            border-bottom: 1px dashed #6c47b0;
+            display: inline-block;
+            width: auto;
+            padding: 0 10px;
+            letter-spacing: 1px;
+        }
+
+        /* Статистика */
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            background: #1e1836cc;
+            border-radius: 60px;
+            padding: 10px 20px;
+            margin-bottom: 28px;
+            backdrop-filter: blur(8px);
+            border: 1px solid #6c47b0;
+            color: #f0e6ff;
+            font-weight: 600;
+        }
+
+        .stat-card {
+            background: #0b0722;
+            padding: 5px 20px;
+            border-radius: 40px;
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            box-shadow: inset 0 1px 2px #ffffff1a, 0 5px 10px #00000030;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #b794f4;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            line-height: 1;
+            color: #f2e8ff;
+            text-shadow: 0 0 5px #a855f7;
+        }
+
+        /* Сетка карточек */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(70px, 100px));
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        /* Стиль карточки */
+        .card {
+            aspect-ratio: 1 / 1;
+            background: linear-gradient(145deg, #2d2352, #191138);
+            border-radius: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(156, 106, 222, 0.6);
+            transform-style: preserve-3d;
+        }
+
+        /* Анимация переворота */
+        .card.flipped, .card.matched {
+            background: radial-gradient(circle at 30% 20%, #f5e6ff, #d9b8ff);
+            box-shadow: 0 0 12px #c084fc, inset 0 0 8px white;
+            border: 1px solid #f0dbff;
+        }
+
+        .card .front, .card .back {
+            font-size: 3rem;
+            backface-visibility: hidden;
+            transition: 0.2s;
+        }
+
+        /* упрощённая логика: внутри всегда один контент, просто меняем содержимое */
+        .card .card-content {
+            font-size: 3rem;
+            filter: drop-shadow(2px 4px 8px rgba(0,0,0,0.3));
+            transition: transform 0.2s;
+        }
+
+        /* неоткрытая карточка показывает магический знак вопроса */
+        .card:not(.flipped):not(.matched) .card-content {
+            content: "?";
+            font-size: 3rem;
+            font-weight: bold;
+            color: #c7b0ff;
+            text-shadow: 0 0 6px #9f7aea;
+            font-family: monospace;
+        }
+
+        /* эффект при наведении */
+        .card:hover:not(.matched) {
+            transform: scale(1.02);
+            box-shadow: 0 0 15px #a855f7;
+            border-color: #d4a5ff;
+        }
+
+        /* совпавшие карточки становятся полупрозрачными с сиянием */
+        .card.matched {
+            cursor: default;
+            filter: drop-shadow(0 0 6px #f0b3ff);
+            background: radial-gradient(circle at 30% 20%, #b77eff, #9b59b6);
+            opacity: 0.85;
+            transform: scale(0.97);
+        }
+
+        .card.matched .card-content {
+            filter: drop-shadow(0 0 8px gold);
+        }
+
+        /* кнопка новой игры */
+        .magic-btn {
+            background: linear-gradient(95deg, #3c2a6b, #271c4a);
+            border: none;
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 12px 28px;
+            border-radius: 50px;
+            color: #f0e9ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 0 auto;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: fit-content;
+            box-shadow: 0 8px 14px #00000040, inset 0 1px 0 #9f7aea70;
+            font-family: inherit;
+        }
+
+        .magic-btn:hover {
+            background: linear-gradient(95deg, #5a42a0, #3f2c72);
+            transform: scale(1.02);
+            box-shadow: 0 0 20px #a76eff;
+            letter-spacing: 1px;
+        }
+
+        .magic-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* сообщение о победе */
+        .victory-toast {
+            position: fixed;
+            top: 25%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: #1f173dcc;
+            backdrop-filter: blur(12px);
+            border-radius: 60px;
+            padding: 16px 32px;
+            color: #ffefb9;
+            font-size: 1.8rem;
+            font-weight: bold;
+            border: 2px solid #ffd966;
+            box-shadow: 0 0 55px #f5b042;
+            z-index: 100;
+            text-align: center;
+            white-space: nowrap;
+            transition: 0.2s;
+            opacity: 0;
+            pointer-events: none;
+            font-family: monospace;
+        }
+
+        .victory-toast.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: none;
+        }
+
+        /* подсказка для мобильных */
+        @media (max-width: 550px) {
+            .board {
+                gap: 12px;
+                grid-template-columns: repeat(4, minmax(65px, 85px));
+            }
+            .card .card-content {
+                font-size: 2.3rem;
+            }
+            .card:not(.flipped):not(.matched) .card-content {
+                font-size: 2.3rem;
+            }
+            .stat-value {
+                font-size: 1.4rem;
+            }
+            .title {
+                font-size: 1.9rem;
+            }
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 0.7rem;
+            color: #6a5a8e;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div class="title">
+        <span>🧙‍♀️</span> MAGIC PUZZLE <span>✨</span>
+    </div>
+    <div style="text-align: center;">
+        <div class="sub">✦ найди все магические пары ✦</div>
+    </div>
+
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-label">🔮 ПАРЫ</div>
+            <div class="stat-value" id="pairs-matched">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">⚡ ПОПЫТКИ</div>
+            <div class="stat-value" id="attempts-count">0</div>
+        </div>
+    </div>
+
+    <div class="board" id="game-board"></div>
+
+    <button class="magic-btn" id="restart-btn">
+        <span>🪄</span> НОВАЯ ИГРА <span>🌀</span>
+    </button>
+    <footer>✨ кликай на карточки — открывай магические символы ✨</footer>
+</div>
+
+<div id="victory-message" class="victory-toast">✨ ВОЛШЕБСТВО ПОБЕДЫ! ✨</div>
+
+<script>
+    // ======================= МАГИЧЕСКИЙ НАБОР СИМВОЛОВ =======================
+    // 8 уникальных пар (всего 16 карт)
+    const MAGIC_ICONS = [
+        "🧪",   // зелье
+        "🔮",   // хрустальный шар
+        "📜",   // свиток
+        "⚡",   // молния
+        "🌙",   // луна
+        "🕯️",  // свеча
+        "🧙",   // маг
+        "🐉"    // дракон
+    ];
+
+    // Вспомогательные переменные состояния игры
+    let cardsData = [];          // хранит объекты { id, icon, matched, flipped }
+    let cardElements = [];       // ссылки на DOM элементы карточек
+    let lockBoard = false;       // блокировка при сравнении / анимации
+    let firstCardIndex = null;   // индекс первой открытой карты
+    let secondCardIndex = null;  // индекс второй открытой карты
+    let attempts = 0;            // количество попыток (пар кликов)
+    let matchedPairs = 0;        // количество найденных пар
+    let totalPairs = MAGIC_ICONS.length; // 8 пар
+
+    // DOM элементы
+    const boardContainer = document.getElementById('game-board');
+    const pairsMatchedSpan = document.getElementById('pairs-matched');
+    const attemptsSpan = document.getElementById('attempts-count');
+    const restartBtn = document.getElementById('restart-btn');
+    const victoryToast = document.getElementById('victory-message');
+
+    // Функция перемешивания (Fisher-Yates)
+    function shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    // Инициализация данных карточек (создание пар и перемешивание)
+    function initCardsData() {
+        // Создаём массив из пар: для каждой иконки создаём 2 объекта
+        let deck = [];
+        for (let i = 0; i < MAGIC_ICONS.length; i++) {
+            const icon = MAGIC_ICONS[i];
+            deck.push({ id: i, icon: icon, matched: false, flipped: false, uniqueKey: Math.random() });
+            deck.push({ id: i, icon: icon, matched: false, flipped: false, uniqueKey: Math.random() });
+        }
+        // Перемешиваем колоду
+        deck = shuffleArray(deck);
+        // Добавляем индекс для отслеживания позиции
+        return deck.map((card, idx) => ({
+            ...card,
+            position: idx,
+            // Для удобства сохраним оригинальный id пары
+        }));
+    }
+
+    // Обновление UI (счётчики)
+    function updateStatsUI() {
+        pairsMatchedSpan.innerText = `${matchedPairs} / ${totalPairs}`;
+        attemptsSpan.innerText = attempts;
+    }
+
+    // Отображение доски (рендер карточек)
+    function renderBoard() {
+        boardContainer.innerHTML = '';
+        cardElements = [];
+        for (let i = 0; i < cardsData.length; i++) {
+            const card = cardsData[i];
+            const cardDiv = document.createElement('div');
+            cardDiv.classList.add('card');
+            if (card.matched) {
+                cardDiv.classList.add('matched');
+            } else if (card.flipped) {
+                cardDiv.classList.add('flipped');
+            }
+            // Внутренний контент
+            const contentSpan = document.createElement('div');
+            contentSpan.classList.add('card-content');
+            // Если карта совпала или перевернута — показываем иконку, иначе знак вопроса
+            if (card.matched || card.flipped) {
+                contentSpan.innerText = card.icon;
+            } else {
+                contentSpan.innerText = '?';
+                // добавим магическую звёздочку для стиля? нет, просто '?'
+            }
+            cardDiv.appendChild(contentSpan);
+            cardDiv.addEventListener('click', (e) => {
+                e.stopPropagation();
+                onCardClick(i);
+            });
+            boardContainer.appendChild(cardDiv);
+            cardElements.push(cardDiv);
+        }
+    }
+
+    // Обновить конкретную карточку по индексу (синхронизация класса и текста)
+    function updateCardUI(index) {
+        const card = cardsData[index];
+        const cardDiv = cardElements[index];
+        if (!cardDiv) return;
+        // сбросим классы
+        cardDiv.classList.remove('flipped', 'matched');
+        if (card.matched) {
+            cardDiv.classList.add('matched');
+        } else if (card.flipped) {
+            cardDiv.classList.add('flipped');
+        }
+        const contentSpan = cardDiv.querySelector('.card-content');
+        if (card.matched || card.flipped) {
+            contentSpan.innerText = card.icon;
+        } else {
+            contentSpan.innerText = '?';
+        }
+    }
+
+    // Сброс временно открытых карт (если не совпали)
+    function resetTemporaryCards(resetFirstSecond = true) {
+        // если есть открытые НЕ совпавшие карты — переворачиваем обратно
+        if (firstCardIndex !== null && !cardsData[firstCardIndex].matched) {
+            cardsData[firstCardIndex].flipped = false;
+            updateCardUI(firstCardIndex);
+        }
+        if (secondCardIndex !== null && !cardsData[secondCardIndex].matched) {
+            cardsData[secondCardIndex].flipped = false;
+            updateCardUI(secondCardIndex);
+        }
+        if (resetFirstSecond) {
+            firstCardIndex = null;
+            secondCardIndex = null;
+        }
+    }
+
+    // Проверка на победу
+    function checkVictory() {
+        if (matchedPairs === totalPairs) {
+            // Показать магическое сообщение
+            victoryToast.classList.add('show');
+            setTimeout(() => {
+                victoryToast.classList.remove('show');
+            }, 2000);
+            // Можно также добавить эффект конфетти (но без лишних библиотек)
+            // Блокируем дальнейшие клики до рестарта, чтобы не мешать
+            lockBoard = true;
+            // создаём волшебное свечение на всех карточках
+            for (let i = 0; i < cardElements.length; i++) {
+                if (cardElements[i]) {
+                    cardElements[i].style.transition = '0.2s';
+                    cardElements[i].style.boxShadow = '0 0 18px #ffd966';
+                }
+            }
+        }
+    }
+
+    // Логика обработки клика по карточке
+    function onCardClick(clickedIndex) {
+        // Заблокировано ли поле (сравнение или победа)
+        if (lockBoard) return;
+        const clickedCard = cardsData[clickedIndex];
+        // Если карточка уже совпала или уже открыта (flipped) и не является частью ожидания — запрещаем клик
+        if (clickedCard.matched) return;
+        // Если уже две открытые карты ждут проверки — нельзя кликать новые (lockBoard уже true в этот момент)
+        if (firstCardIndex !== null && secondCardIndex !== null) return;
+        // Если кликнули на уже открытую (flipped) карточку, но она не совпала — игнорируем (чтобы не спамить)
+        if (clickedCard.flipped && !clickedCard.matched) return;
+
+        // Открываем текущую карту
+        clickedCard.flipped = true;
+        updateCardUI(clickedIndex);
+
+        // Ситуация: если first пуст, то это первая карта
+        if (firstCardIndex === null) {
+            firstCardIndex = clickedIndex;
+            return;
+        }
+
+        // Если first есть, а second пуст, то это вторая карта
+        if (firstCardIndex !== null && secondCardIndex === null) {
+            // не должно быть совпадением с той же картой
+            if (firstCardIndex === clickedIndex) return;
+
+            secondCardIndex = clickedIndex;
+            // Увеличиваем счётчик попыток
+            attempts++;
+            updateStatsUI();
+
+            // Проверяем на совпадение (по id пары)
+            const card1 = cardsData[firstCardIndex];
+            const card2 = cardsData[secondCardIndex];
+            const isMatch = (card1.id === card2.id);
+
+            if (isMatch) {
+                // Пара найдена!
+                card1.matched = true;
+                card2.matched = true;
+                // Оставляем их во flipped состоянии (matched перекрывает стили, но оставим для эстетики)
+                card1.flipped = true;
+                card2.flipped = true;
+                updateCardUI(firstCardIndex);
+                updateCardUI(secondCardIndex);
+                matchedPairs++;
+                updateStatsUI();
+
+                // Сбрасываем временные индексы, не переворачивая обратно
+                firstCardIndex = null;
+                secondCardIndex = null;
+
+                // Проверка победы
+                checkVictory();
+                // Если победа, lockBoard станет true, иначе продолжаем
+            } else {
+                // Не совпали — блокируем доску на время анимации
+                lockBoard = true;
+                // Через таймаут переворачиваем обратно
+                setTimeout(() => {
+                    // Убедимся, что карты не стали matched за это время (не должны)
+                    if (!cardsData[firstCardIndex].matched) {
+                        cardsData[firstCardIndex].flipped = false;
+                        updateCardUI(firstCardIndex);
+                    }
+                    if (!cardsData[secondCardIndex].matched) {
+                        cardsData[secondCardIndex].flipped = false;
+                        updateCardUI(secondCardIndex);
+                    }
+                    // Сброс индексов
+                    firstCardIndex = null;
+                    secondCardIndex = null;
+                    // Разблокируем доску
+                    lockBoard = false;
+                }, 800);
+            }
+            // Если совпали, индексы уже обнулены, разблокировка не нужна (lockBoard не был true)
+            if (isMatch) {
+                // убедимся что lockBoard false, всё ок
+                if (lockBoard) lockBoard = false;
+            }
+        }
+    }
+
+    // Полная перезагрузка игры
+    function newGame() {
+        // Сбрасываем глобальные переменные
+        lockBoard = false;
+        firstCardIndex = null;
+        secondCardIndex = null;
+        attempts = 0;
+        matchedPairs = 0;
+        // Создаём новые перемешанные данные
+        cardsData = initCardsData();
+        updateStatsUI();
+        renderBoard();
+        // Убираем блокировку и эффекты победы
+        victoryToast.classList.remove('show');
+        // сброс дополнительных стилей
+        if (cardElements) {
+            for (let i = 0; i < cardElements.length; i++) {
+                if (cardElements[i]) {
+                    cardElements[i].style.boxShadow = '';
+                }
+            }
+        }
+    }
+
+    // Обработчик кнопки рестарта
+    restartBtn.addEventListener('click', () => {
+        newGame();
+    });
+
+    // Инициализация первой игры
+    function startGame() {
+        cardsData = initCardsData();
+        matchedPairs = 0;
+        attempts = 0;
+        updateStatsUI();
+        renderBoard();
+        lockBoard = false;
+        firstCardIndex = null;
+        secondCardIndex = null;
+    }
+
+    startGame();
+</script>
+</body>
+</html>
