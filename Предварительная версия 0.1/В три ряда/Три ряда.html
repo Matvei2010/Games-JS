@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>NEON MATCH-3 // 2030</title>
     <style>
-        /* ========== КИБЕРПАНК 2030 (без изменений) ========== */
         * {
             margin: 0;
             padding: 0;
@@ -61,7 +60,6 @@
             box-shadow: 0 0 40px rgba(0, 255, 255, 0.2), inset 0 1px 0 rgba(255,255,255,0.1);
             width: 90%;
             max-width: 520px;
-            transition: 0.2s;
         }
         .menu-card h1 {
             font-size: 3.8rem;
@@ -202,6 +200,37 @@
             text-shadow: 0 0 6px cyan;
         }
         .goal-box { background: #2a2a4a; border-left-color: #ff66ff; }
+        .local-multiplayer-panel {
+            display: flex;
+            gap: 16px;
+            background: rgba(0, 20, 40, 0.7);
+            padding: 8px 18px;
+            border-radius: 60px;
+            align-items: center;
+            font-weight: bold;
+            border-left: 3px solid magenta;
+        }
+        .player-score {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 40px;
+            transition: all 0.2s;
+        }
+        .player-score.active {
+            background: rgba(255, 0, 255, 0.3);
+            box-shadow: 0 0 10px magenta;
+        }
+        .player-name {
+            font-size: 0.8rem;
+            color: #ffccff;
+        }
+        .player-points {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #0ff;
+        }
         button {
             background: linear-gradient(145deg, #0a1428, #010a18);
             border: 1px solid #0ff;
@@ -341,6 +370,66 @@
             display: none;
         }
         .fps-counter.visible { display: block; }
+        .ai-chat {
+            display: flex;
+            flex-direction: column;
+            height: 400px;
+            overflow-y: hidden;
+        }
+        .ai-messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            padding-right: 8px;
+            text-align: left;
+        }
+        .ai-message {
+            background: rgba(0, 20, 40, 0.7);
+            border-radius: 20px;
+            padding: 8px 14px;
+            margin: 8px 0;
+            border-left: 3px solid cyan;
+            color: #bbf0ff;
+            font-size: 0.9rem;
+            word-wrap: break-word;
+        }
+        .ai-message.user {
+            border-left-color: magenta;
+            text-align: right;
+            background: rgba(30, 0, 60, 0.6);
+        }
+        .ai-input-area {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .ai-input-area input {
+            flex: 1;
+            background: #0a1428;
+            border: 1px solid cyan;
+            border-radius: 40px;
+            padding: 10px 16px;
+            color: cyan;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+        .ai-input-area input:focus {
+            outline: none;
+            box-shadow: 0 0 8px cyan;
+        }
+        .ai-input-area button {
+            background: #011c2c;
+            border: 1px solid cyan;
+            padding: 8px 16px;
+            margin: 0;
+            min-height: 40px;
+        }
+        .ai-clear-btn {
+            background: #2a0a2a;
+            border-color: magenta;
+            color: magenta;
+            margin-top: 10px;
+        }
         @keyframes cyberFade {
             0% { opacity: 0; backdrop-filter: blur(0px); transform: scale(0.96);}
             100% { opacity: 1; backdrop-filter: blur(24px); transform: scale(1);}
@@ -358,11 +447,12 @@
             .info-panel { gap: 8px; justify-content: center; }
             .score-box span, .coins-box span { font-size: 1.2rem; }
             .shop-item, .setting-item { flex-direction: column; gap: 10px; }
+            .ai-chat { height: 320px; }
+            .local-multiplayer-panel { flex-wrap: wrap; justify-content: center; }
         }
     </style>
 </head>
 <body>
-
     <div id="mainMenu" class="main-menu">
         <div class="menu-card">
             <h1>✦ NEON MATCH-3 ✦</h1>
@@ -371,29 +461,29 @@
             <div class="copyright">[ версия 2030 ] // перетащи фишку — создай ряд</div>
         </div>
     </div>
-
     <div id="modeSelect" class="mode-select" style="display: none;">
         <div class="mode-card">
             <h2>ВЫБЕРИ РЕЖИМ</h2>
             <button id="endlessModeBtn">♾️ БЕСКОНЕЧНОСТЬ</button>
             <button id="storyModeBtn">📖 СЮЖЕТ / ЗАДАНИЯ</button>
+            <button id="localModeBtn">👥 ЛОКАЛЬНАЯ ИГРА (2 игрока)</button>
             <button id="cancelModeBtn">🔙 ОТМЕНА</button>
         </div>
     </div>
-
     <div id="gameContainer" class="game-container">
         <canvas id="gameCanvas" width="500" height="500"></canvas>
-        <div class="info-panel">
-            <div class="score-box">🍥 СЧЁТ: <span id="scoreValue">0</span></div>
-            <div class="coins-box">💠 МОНЕТЫ: <span id="coinsValue">0</span></div>
+        <div class="info-panel" id="infoPanel">
+            <div class="score-box" id="scoreBox">🍥 СЧЁТ: <span id="scoreValue">0</span></div>
+            <div class="coins-box" id="coinsBox">💠 МОНЕТЫ: <span id="coinsValue">0</span></div>
             <div class="goal-box" id="goalBox" style="display: none;">🎯 ЦЕЛЬ: <span id="goalText">-</span></div>
+            <div id="localPanel" class="local-multiplayer-panel" style="display: none;"></div>
             <button id="shopBtn">🛸 МАГАЗИН</button>
             <button id="menuReturnBtn">🏠 ВЫХОД</button>
             <button id="gameSettingsBtn">⚙️ НАСТР.</button>
+            <button id="aiAssistantBtn">🤖 AI</button>
         </div>
         <div class="copyright">👾 свайп / мышь — меняй фишки местами. 4+ в ряд → 💣 бомба</div>
     </div>
-
     <div id="shopModal" class="modal">
         <div class="modal-content">
             <h3>🛸 КИБЕР-МАРКЕТ</h3>
@@ -404,7 +494,6 @@
             <button class="close-modal" id="closeShopBtn">ЗАКРЫТЬ</button>
         </div>
     </div>
-
     <div id="settingsModal" class="modal">
         <div class="modal-content">
             <h3>🔧 НЕЙРО-ИНТЕРФЕЙС</h3>
@@ -445,12 +534,26 @@
             <button class="close-modal" id="closeSettingsBtn">ЗАКРЫТЬ</button>
         </div>
     </div>
-
+    <div id="aiModal" class="modal">
+        <div class="modal-content" style="max-width: 550px;">
+            <h3>🤖 AI-АССИСТЕНТ</h3>
+            <div class="ai-chat">
+                <div class="ai-messages" id="aiMessages">
+                    <div class="ai-message">Привет! Я твой игровой помощник. Спрашивай меня о правилах, бомбах, магазине и стратегиях. Например: "как играть", "что такое бомба", "как получить монеты".</div>
+                </div>
+                <div class="ai-input-area">
+                    <input type="text" id="aiInput" placeholder="Задай вопрос..." autocomplete="off">
+                    <button id="aiSendBtn">➤</button>
+                </div>
+                <button id="aiClearBtn" class="ai-clear-btn">ОЧИСТИТЬ ИСТОРИЮ</button>
+            </div>
+            <button class="close-modal" id="closeAiBtn">ЗАКРЫТЬ</button>
+        </div>
+    </div>
     <div id="fpsCounter" class="fps-counter">FPS: --</div>
-
     <script>
         (function(){
-            // ========== АУДИО (без изменений) ==========
+            // ---------- АУДИО ----------
             let audioCtx = null;
             let musicEnabled = true;
             let sfxEnabled = true;
@@ -496,7 +599,7 @@
             function playMatchSound() { if (!sfxEnabled) return; if (customMatchSoundAudio && customMatchSoundAudio.src) { const sound = customMatchSoundAudio.cloneNode(); sound.volume = musicVolume; sound.play().catch(e=>{}); } else if (audioCtx) { const now = audioCtx.currentTime; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type = 'sine'; osc.frequency.value = 880; gain.gain.setValueAtTime(0.3 * musicVolume, now); gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2); osc.frequency.exponentialRampToValueAtTime(440, now + 0.15); osc.connect(gain); gain.connect(masterGain); osc.start(); osc.stop(now + 0.2); } }
             function playBombSound() { if (!sfxEnabled) return; if (audioCtx) { const now = audioCtx.currentTime; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type = 'sawtooth'; osc.frequency.value = 220; gain.gain.setValueAtTime(0.5 * musicVolume, now); gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4); osc.frequency.exponentialRampToValueAtTime(110, now + 0.3); osc.connect(gain); gain.connect(masterGain); osc.start(); osc.stop(now + 0.5); } }
 
-            // ========== ИГРОВАЯ ЛОГИКА (оптимизированная) ==========
+            // ---------- ИГРОВАЯ ЛОГИКА ----------
             let rows = 8, cols = 8;
             const TYPES = 6;
             const BOMB_TYPE = -2;
@@ -520,15 +623,68 @@
             let storyCollected = 0;
             let hintCells = [];
             let hintTimeout = null;
-            let needsRedraw = true;  // флаг для отложенной отрисовки
 
+            // ---------- ЛОКАЛЬНЫЙ МУЛЬТИПЛЕЕР ----------
+            let localMultiplayer = false;
+            let currentPlayer = 0;
+            let playerScores = [0, 0];
+            let turnLock = false;
+
+            function updateLocalUI() {
+                if (!localMultiplayer) return;
+                const panel = document.getElementById('localPanel');
+                panel.innerHTML = `
+                    <div class="player-score ${currentPlayer === 0 ? 'active' : ''}" style="border-right: 1px solid cyan; padding-right: 16px;">
+                        <div class="player-name">👾 ИГРОК 1</div>
+                        <div class="player-points">${playerScores[0]}</div>
+                    </div>
+                    <div class="player-score ${currentPlayer === 1 ? 'active' : ''}">
+                        <div class="player-name">🤖 ИГРОК 2</div>
+                        <div class="player-points">${playerScores[1]}</div>
+                    </div>
+                `;
+            }
+            function switchPlayer() {
+                if (!localMultiplayer) return;
+                currentPlayer = currentPlayer === 0 ? 1 : 0;
+                updateLocalUI();
+                if (sfxEnabled && audioCtx) {
+                    const now = audioCtx.currentTime;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = 880;
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+                    osc.connect(gain);
+                    gain.connect(masterGain);
+                    osc.start();
+                    osc.stop(now + 0.1);
+                }
+            }
+            function addLocalScore(amount) {
+                if (!localMultiplayer) return;
+                playerScores[currentPlayer] += amount;
+                updateLocalUI();
+            }
+            function showLocalUI(show) {
+                document.getElementById('scoreBox').style.display = show ? 'none' : 'flex';
+                document.getElementById('coinsBox').style.display = show ? 'none' : 'flex';
+                document.getElementById('localPanel').style.display = show ? 'flex' : 'none';
+                if (show) updateLocalUI();
+            }
+
+            // ---- Вспомогательные функции ----
             function getItemNameByType(type) { const names = ["🍪 Печенак", "🍩 Пончиков", "🍬 Леденец", "🍫 Шоколада", "🍡 Карамель", "⭐ Звёзд"]; return names[type % names.length]; }
             function generateRandomGoal() { const randomType = Math.floor(Math.random() * TYPES); const randomCount = Math.floor(Math.random() * (40 - 5 + 1) + 5); return { type: randomType, count: randomCount, name: getItemNameByType(randomType) }; }
             function getFieldConfig(type) { switch(type) { case "small": return { rows: 6, cols: 6, walls: [] }; case "narrow": return { rows: 8, cols: 6, walls: [] }; case "square": return { rows: 7, cols: 7, walls: [] }; case "obstacles": return { rows: 8, cols: 8, walls: [[2,2],[2,3],[3,2],[3,3],[5,5],[5,6],[6,5],[6,6]] }; default: return { rows: 8, cols: 8, walls: [] }; } }
             function setFieldType(type) { const cfg = getFieldConfig(type); rows = cfg.rows; cols = cfg.cols; board = Array(rows).fill().map(() => Array(cols).fill(0)); for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) board[r][c] = Math.floor(Math.random() * TYPES); for (let w of cfg.walls) if (w[0] < rows && w[1] < cols) board[w[0]][w[1]] = WALL_TYPE; clearMatchesAndRefill(); resizeCanvas(); drawBoard(); localStorage.setItem('match3_field_type', type); }
             function isWall(row, col) { return row >= 0 && row < rows && col >= 0 && col < cols && board[row][col] === WALL_TYPE; }
             function updateCoinsUI() { document.getElementById('coinsValue').innerText = coins; if(document.getElementById('shopCoins')) document.getElementById('shopCoins').innerText = coins; }
-            function addCoins(amount) { coins += amount; updateCoinsUI(); saveGameState(); }
+            function addCoins(amount) {
+                if (localMultiplayer) addLocalScore(amount);
+                else { coins += amount; updateCoinsUI(); saveGameState(); }
+            }
             function spendCoins(amount) { if (coins >= amount) { coins -= amount; updateCoinsUI(); saveGameState(); return true; } return false; }
             function buyBomb() { if (spendCoins(50)) { let freeCells = []; for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) if (board[r][c] >= 0) freeCells.push({r,c}); if (freeCells.length===0) { addCoins(50); alert("Нет места"); return; } const cell = freeCells[Math.floor(Math.random()*freeCells.length)]; board[cell.r][cell.c] = BOMB_TYPE; drawBoard(); saveGameState(); alert("Бомба активирована"); } else alert("Недостаточно монет"); }
             function buyShuffle() { if (spendCoins(30)) { shuffleBoard(); alert("Поле перемешано"); } else alert("Недостаточно монет"); }
@@ -540,11 +696,41 @@
             function loadStoryProgress() { const savedType = localStorage.getItem('match3_story_goal_type'); const savedCount = localStorage.getItem('match3_story_goal_count'); const savedName = localStorage.getItem('match3_story_goal_name'); const savedCollected = localStorage.getItem('match3_story_collected'); if (savedType !== null && savedCount !== null) { storyGoal = { type: parseInt(savedType), count: parseInt(savedCount), name: savedName || getItemNameByType(parseInt(savedType)) }; storyCollected = savedCollected ? parseInt(savedCollected) : 0; } else { storyGoal = generateRandomGoal(); storyCollected = 0; } updateGoalUI(); }
             function saveGameState() { localStorage.setItem('match3_board', JSON.stringify(board)); if (gameMode === "endless") localStorage.setItem('match3_score', score); localStorage.setItem('match3_mode', gameMode); localStorage.setItem('match3_coins', coins); if (gameMode === "story") saveStoryProgress(); localStorage.setItem('match3_field_type', document.getElementById('fieldTypeSelect').value); }
             function loadGameState() { const savedBoard = localStorage.getItem('match3_board'); const savedScore = localStorage.getItem('match3_score'); const savedMode = localStorage.getItem('match3_mode'); const savedCoins = localStorage.getItem('match3_coins'); const savedField = localStorage.getItem('match3_field_type'); if (savedField) { const select = document.getElementById('fieldTypeSelect'); if (select) select.value = savedField; setFieldType(savedField); } if (savedCoins !== null) coins = parseInt(savedCoins); if (savedBoard) { board = JSON.parse(savedBoard); if (savedMode === "story") { gameMode = "story"; loadStoryProgress(); document.getElementById('scoreValue').innerText = `${storyCollected}/${storyGoal.count}`; } else { gameMode = "endless"; if (savedScore) score = parseInt(savedScore); document.getElementById('scoreValue').innerText = score; } drawBoard(); updateCoinsUI(); return true; } return false; }
-            function startGame(mode) { gameMode = mode; if (mode === "story") { storyGoal = generateRandomGoal(); storyCollected = 0; updateGoalUI(); document.getElementById('scoreValue').innerText = `0/${storyGoal.count}`; } else { score = 0; document.getElementById('scoreValue').innerText = "0"; document.getElementById('goalBox').style.display = "none"; } initBoard(); isProcessing = false; drawBoard(); saveGameState(); }
+            function startGame(mode) {
+                gameMode = mode;
+                localMultiplayer = (mode === "local");
+                if (localMultiplayer) {
+                    playerScores = [0, 0];
+                    currentPlayer = 0;
+                    showLocalUI(true);
+                    document.getElementById('shopBtn').disabled = true;
+                    document.getElementById('shopBtn').style.opacity = '0.5';
+                    document.getElementById('shopBtn').style.pointerEvents = 'none';
+                } else {
+                    showLocalUI(false);
+                    document.getElementById('shopBtn').disabled = false;
+                    document.getElementById('shopBtn').style.opacity = '1';
+                    document.getElementById('shopBtn').style.pointerEvents = 'auto';
+                    if (mode === "story") {
+                        storyGoal = generateRandomGoal();
+                        storyCollected = 0;
+                        updateGoalUI();
+                        document.getElementById('scoreValue').innerText = `0/${storyGoal.count}`;
+                    } else {
+                        score = 0;
+                        document.getElementById('scoreValue').innerText = "0";
+                        document.getElementById('goalBox').style.display = "none";
+                    }
+                }
+                initBoard();
+                isProcessing = false;
+                drawBoard();
+                saveGameState();
+            }
             function resizeCanvas() { const container = document.getElementById('gameContainer'); const maxWidth = Math.min(container.clientWidth - 40, 500); const maxSize = Math.min(maxWidth, 500); tileSize = Math.floor(maxSize / Math.max(rows, cols)); canvas.width = cols * tileSize; canvas.height = rows * tileSize; drawBoard(); }
             window.addEventListener('resize', () => resizeCanvas());
-            
-            // Оптимизированная проверка матчей (без лишних Set/строк)
+
+            // ---- Функции матчинга и гравитации ----
             function getMatchesInfo() { 
                 let matchesSet = new Set(); 
                 let longMatches = []; 
@@ -576,15 +762,16 @@
             }
             function hasMatches() { const { matchesSet, longMatches } = getMatchesInfo(); return matchesSet.size > 0 || longMatches.length > 0; }
             function clearMatchesWithoutScore() { while (true) { const { matchesSet, longMatches } = getMatchesInfo(); if (matchesSet.size === 0 && longMatches.length === 0) break; for (const coord of matchesSet) { let [r, c] = coord.split(',').map(Number); if (board[r][c] >= 0) board[r][c] = -1; } for (const lm of longMatches) { const { row, col, length, isHorizontal } = lm; if (isHorizontal) { for (let i = 0; i < length; i++) { const cc = col - Math.floor(length/2) + i; if (cc >= 0 && cc < cols && board[row][cc] >= 0) board[row][cc] = -1; } } else { for (let i = 0; i < length; i++) { const rr = row - Math.floor(length/2) + i; if (rr >= 0 && rr < rows && board[rr][col] >= 0) board[rr][col] = -1; } } } applyGravityAndRefill(); } }
-            function removeMatchesAndAddScore() { const { matchesSet, longMatches } = getMatchesInfo(); if (matchesSet.size === 0 && longMatches.length === 0) return 0; let removedCount = 0; let removedTypes = []; for (const lm of longMatches) { const { row, col, length } = lm; if (board[row][col] !== BOMB_TYPE) { board[row][col] = BOMB_TYPE; if (gameMode === "endless") { score += 100 * length; document.getElementById('scoreValue').innerText = score; addCoins(100 * length); } if (sfxEnabled) playMatchSound(); } if (lm.isHorizontal) { for (let i = 0; i < length; i++) { const cc = col - Math.floor(length/2) + i; if (cc >= 0 && cc < cols && board[row][cc] !== BOMB_TYPE && board[row][cc] >= 0) { removedTypes.push(board[row][cc]); board[row][cc] = -1; removedCount++; } } } else { for (let i = 0; i < length; i++) { const rr = row - Math.floor(length/2) + i; if (rr >= 0 && rr < rows && board[rr][col] !== BOMB_TYPE && board[rr][col] >= 0) { removedTypes.push(board[rr][col]); board[rr][col] = -1; removedCount++; } } } } for (const coord of matchesSet) { let [r, c] = coord.split(',').map(Number); if (board[r][c] !== -1 && board[r][c] !== BOMB_TYPE) { removedTypes.push(board[r][c]); board[r][c] = -1; removedCount++; } } if (gameMode === "endless") { score += removedCount * 10; document.getElementById('scoreValue').innerText = score; addCoins(removedCount * 10); } else { countCollectedFromMatches(removedTypes); } if (sfxEnabled && removedCount > 0) playMatchSound(); return removedCount; }
+            function removeMatchesAndAddScore() { const { matchesSet, longMatches } = getMatchesInfo(); if (matchesSet.size === 0 && longMatches.length === 0) return 0; let removedCount = 0; let removedTypes = []; for (const lm of longMatches) { const { row, col, length } = lm; if (board[row][col] !== BOMB_TYPE) { board[row][col] = BOMB_TYPE; if (gameMode === "endless" && !localMultiplayer) { score += 100 * length; document.getElementById('scoreValue').innerText = score; addCoins(100 * length); } else if (localMultiplayer) { addCoins(100 * length); } if (sfxEnabled) playMatchSound(); } if (lm.isHorizontal) { for (let i = 0; i < length; i++) { const cc = col - Math.floor(length/2) + i; if (cc >= 0 && cc < cols && board[row][cc] !== BOMB_TYPE && board[row][cc] >= 0) { removedTypes.push(board[row][cc]); board[row][cc] = -1; removedCount++; } } } else { for (let i = 0; i < length; i++) { const rr = row - Math.floor(length/2) + i; if (rr >= 0 && rr < rows && board[rr][col] !== BOMB_TYPE && board[rr][col] >= 0) { removedTypes.push(board[rr][col]); board[rr][col] = -1; removedCount++; } } } } for (const coord of matchesSet) { let [r, c] = coord.split(',').map(Number); if (board[r][c] !== -1 && board[r][c] !== BOMB_TYPE) { removedTypes.push(board[r][c]); board[r][c] = -1; removedCount++; } } if (gameMode === "endless" && !localMultiplayer) { score += removedCount * 10; document.getElementById('scoreValue').innerText = score; addCoins(removedCount * 10); } else if (localMultiplayer) { addCoins(removedCount * 10); } else { countCollectedFromMatches(removedTypes); } if (sfxEnabled && removedCount > 0) playMatchSound(); return removedCount; }
             function applyGravityAndRefill() { for (let c = 0; c < cols; c++) { let nonWallValues = []; for (let r = rows-1; r >= 0; r--) { if (!isWall(r, c) && board[r][c] !== -1) { nonWallValues.push(board[r][c]); } } let idx = 0; for (let r = rows-1; r >= 0; r--) { if (isWall(r, c)) continue; if (idx < nonWallValues.length) { board[r][c] = nonWallValues[idx]; idx++; } else { board[r][c] = Math.floor(Math.random() * TYPES); } } } }
             function clearMatchesAndRefill() { let anyRemoved = false; while (true) { let removed = removeMatchesAndAddScore(); if (removed === 0) break; anyRemoved = true; applyGravityAndRefill(); } if (anyRemoved) drawBoard(); return anyRemoved; }
             function hasValidMoves() { for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { if (board[r][c] === BOMB_TYPE || isWall(r,c)) continue; if (c+1 < cols && !isWall(r,c+1) && board[r][c+1] !== BOMB_TYPE) { swapCells(r,c,r,c+1); let has = hasMatches(); swapCells(r,c,r,c+1); if (has) return true; } if (r+1 < rows && !isWall(r+1,c) && board[r+1][c] !== BOMB_TYPE) { swapCells(r,c,r+1,c); let has = hasMatches(); swapCells(r,c,r+1,c); if (has) return true; } } return false; }
             function swapCells(r1,c1,r2,c2) { let temp = board[r1][c1]; board[r1][c1] = board[r2][c2]; board[r2][c2] = temp; }
             function shuffleBoard() { if (isProcessing) return; isProcessing = true; let attempts = 0, success = false; while (attempts < 50 && !success) { let newBoard = Array(rows).fill().map(()=>Array(cols).fill(0)); for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) newBoard[r][c] = Math.floor(Math.random()*TYPES); let oldBoard = board; board = newBoard; clearMatchesWithoutScore(); if (hasValidMoves()) success = true; else board = oldBoard; attempts++; } if (!success) { for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) if (board[r][c] !== BOMB_TYPE && !isWall(r,c)) board[r][c] = Math.floor(Math.random()*TYPES); else if (board[r][c] === BOMB_TYPE) board[r][c] = Math.floor(Math.random()*TYPES); clearMatchesAndRefill(); } drawBoard(); isProcessing = false; saveGameState(); }
             function initBoard() { const fieldType = document.getElementById('fieldTypeSelect').value; const cfg = getFieldConfig(fieldType); rows = cfg.rows; cols = cfg.cols; board = Array(rows).fill().map(()=>Array(cols).fill(0)); for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) board[r][c] = Math.floor(Math.random()*TYPES); for (let w of cfg.walls) if (w[0] < rows && w[1] < cols) board[w[0]][w[1]] = WALL_TYPE; clearMatchesAndRefill(); }
-            
-            // ========== ОПТИМИЗИРОВАННЫЕ АНИМАЦИИ (с ограничением FPS) ==========
+            function resetGame() { if(gameMode==="story") { storyGoal=generateRandomGoal(); storyCollected=0; updateGoalUI(); document.getElementById('scoreValue').innerText=`0/${storyGoal.count}`; } else if (localMultiplayer) { playerScores = [0,0]; currentPlayer=0; updateLocalUI(); } else { score=0; document.getElementById('scoreValue').innerText="0"; } if(!localMultiplayer) coins=0; updateCoinsUI(); initBoard(); isProcessing=false; drawBoard(); saveGameState(); }
+
+            // ---- Анимации с поддержкой FPS ----
             let activeAnimations = { swap: null, falling: [] };
             let pendingAction = null;
             let animationFrame = null;
@@ -594,31 +781,15 @@
             let fpsCounterValue = 0;
             let fpsFrameCount = 0;
             let fpsLastTime = performance.now();
-            let fpsUpdateInterval = null;
-            
-            function updateFpsCounter() {
-                if (!showFps) return;
-                const now = performance.now();
-                fpsFrameCount++;
-                if (now - fpsLastTime >= 1000) {
-                    fpsCounterValue = fpsFrameCount;
-                    fpsFrameCount = 0;
-                    fpsLastTime = now;
-                    const fpsElem = document.getElementById('fpsCounter');
-                    if (fpsElem) fpsElem.innerText = `FPS: ${fpsCounterValue}`;
-                }
-            }
-            
+            function updateFpsCounter() { if (!showFps) return; const now = performance.now(); fpsFrameCount++; if (now - fpsLastTime >= 1000) { fpsCounterValue = fpsFrameCount; fpsFrameCount = 0; fpsLastTime = now; const fpsElem = document.getElementById('fpsCounter'); if (fpsElem) fpsElem.innerText = `FPS: ${fpsCounterValue}`; } }
             function startAnimationLoop() {
                 if (animationFrame) cancelAnimationFrame(animationFrame);
                 lastTimestamp = performance.now();
                 let lastFrameTime = lastTimestamp;
                 function update(now) {
-                    updateFpsCounter(); // считаем FPS
+                    updateFpsCounter();
                     let delta = Math.min(100, now - lastTimestamp);
                     lastTimestamp = now;
-                    
-                    // ограничение FPS (если нужно)
                     if (fpsLimit > 0) {
                         const minFrameTime = 1000 / fpsLimit;
                         const elapsed = now - lastFrameTime;
@@ -628,7 +799,6 @@
                         }
                         lastFrameTime = now;
                     }
-                    
                     let anyActive = false;
                     if (activeAnimations.swap) {
                         anyActive = true;
@@ -638,9 +808,7 @@
                         if (s.progress >= 1) {
                             activeAnimations.swap = null;
                             if (s.onComplete) s.onComplete();
-                        } else {
-                            drawBoard();
-                        }
+                        } else drawBoard();
                     }
                     if (activeAnimations.falling.length > 0) {
                         anyActive = true;
@@ -657,22 +825,15 @@
                                 let action = pendingAction;
                                 pendingAction = null;
                                 action();
-                            } else {
-                                isProcessing = false;
-                            }
+                            } else isProcessing = false;
                             drawBoard();
                         }
                     }
-                    if (anyActive) {
-                        animationFrame = requestAnimationFrame(update);
-                    } else {
-                        animationFrame = null;
-                    }
+                    if (anyActive) animationFrame = requestAnimationFrame(update);
+                    else animationFrame = null;
                 }
                 animationFrame = requestAnimationFrame(update);
             }
-            
-            // Отрисовка (без изменений, но теперь вызывается только когда нужно)
             function drawTile(r,c,x,y,type,isHighlight=false) { 
                 if (type === -1) { ctx.fillStyle = "#aa8866"; ctx.fillRect(x,y,tileSize-1,tileSize-1); return; } 
                 if (type === WALL_TYPE) { ctx.fillStyle = "#4a4a5a"; ctx.fillRect(x,y,tileSize-1,tileSize-1); ctx.fillStyle = "#2a2a3a"; for(let i=0;i<3;i++){ ctx.fillRect(x+tileSize*0.2+i*3,y+tileSize*0.3,tileSize*0.6,2); ctx.fillRect(x+tileSize*0.3,y+tileSize*0.2+i*3,2,tileSize*0.6); } return; } 
@@ -686,14 +847,11 @@
                 ctx.strokeStyle = "#0ff"; ctx.lineWidth = 1.5; ctx.strokeRect(x,y,tileSize,tileSize); 
                 if (isHighlight) { ctx.save(); ctx.shadowBlur = 10; ctx.shadowColor = "#0ff"; ctx.strokeStyle = "#f0f"; ctx.lineWidth = 4; ctx.strokeRect(x+2,y+2,tileSize-5,tileSize-5); ctx.restore(); } 
             }
-            
             function drawBoard() { 
                 if (activeAnimations.swap) { 
                     ctx.clearRect(0,0,canvas.width,canvas.height); 
                     for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) { 
-                        let x=c*tileSize, y=r*tileSize; 
-                        let type=board[r][c]; 
-                        let offsetX=0, offsetY=0; 
+                        let x=c*tileSize, y=r*tileSize; let type=board[r][c]; let offsetX=0, offsetY=0; 
                         if (activeAnimations.swap) { 
                             let s=activeAnimations.swap; 
                             if ((r===s.row1&&c===s.col1)||(r===s.row2&&c===s.col2)) { 
@@ -712,9 +870,7 @@
                 } 
                 ctx.clearRect(0,0,canvas.width,canvas.height); 
                 for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) { 
-                    let x=c*tileSize, y=r*tileSize; 
-                    let type=board[r][c]; 
-                    let offsetY=0; 
+                    let x=c*tileSize, y=r*tileSize; let type=board[r][c]; let offsetY=0; 
                     for (let f of activeAnimations.falling) if (f.toRow===r && f.toCol===c && f.fromRow!==undefined) { 
                         let t=f.progress; 
                         offsetY=(f.fromRow*tileSize - r*tileSize)*t; 
@@ -725,52 +881,29 @@
                     drawTile(r,c,x,y+offsetY,type,highlight); 
                 } 
             }
-            
             function animateSwap(r1,c1,r2,c2,onComplete) { 
                 if (activeAnimations.swap) return; 
                 activeAnimations.swap = { row1:r1, col1:c1, row2:r2, col2:c2, progress:0, elapsed:0, duration:200, onComplete:()=>{ swapCells(r1,c1,r2,c2); drawBoard(); if(onComplete) onComplete(); } }; 
                 startAnimationLoop(); 
                 drawBoard(); 
             }
-            
             function animateFall(changes,onComplete) { 
                 activeAnimations.falling = changes.map(c=>({ fromRow:c.fromRow, fromCol:c.fromCol, toRow:c.toRow, toCol:c.toCol, type:c.type, progress:0, elapsed:0, duration:150 })); 
                 pendingAction = onComplete; 
                 startAnimationLoop(); 
                 drawBoard(); 
             }
-            
-            // Настройки FPS (без глобального переопределения)
-            function setFpsLimit(limit) {
-                fpsLimit = limit;
-                localStorage.setItem('match3_fps_limit', limit);
-            }
-            function setShowFps(show) {
-                showFps = show;
-                localStorage.setItem('match3_show_fps', show);
-                const fpsElem = document.getElementById('fpsCounter');
-                if (show) {
-                    fpsElem.classList.add('visible');
-                    fpsFrameCount = 0;
-                    fpsLastTime = performance.now();
-                } else {
-                    fpsElem.classList.remove('visible');
-                }
-            }
-            function loadFpsSettings() {
-                const savedLimit = localStorage.getItem('match3_fps_limit');
-                if (savedLimit !== null) fpsLimit = parseInt(savedLimit);
-                else fpsLimit = 60;
-                const savedShow = localStorage.getItem('match3_show_fps');
-                if (savedShow !== null) showFps = savedShow === 'true';
-                else showFps = false;
-                document.getElementById('fpsLimitSelect').value = fpsLimit;
-                document.getElementById('showFpsToggle').checked = showFps;
-                setFpsLimit(fpsLimit);
-                setShowFps(showFps);
-            }
-            
-            // ---------- ОСТАЛЬНЫЕ ФУНКЦИИ ----------
+            function setFpsLimit(limit) { fpsLimit = limit; localStorage.setItem('match3_fps_limit', limit); }
+            function setShowFps(show) { showFps = show; localStorage.setItem('match3_show_fps', show); const fpsElem = document.getElementById('fpsCounter'); if (show) { fpsElem.classList.add('visible'); fpsFrameCount = 0; fpsLastTime = performance.now(); } else { fpsElem.classList.remove('visible'); } }
+            function loadFpsSettings() { const savedLimit = localStorage.getItem('match3_fps_limit'); if (savedLimit !== null) fpsLimit = parseInt(savedLimit); else fpsLimit = 60; const savedShow = localStorage.getItem('match3_show_fps'); if (savedShow !== null) showFps = savedShow === 'true'; else showFps = false; document.getElementById('fpsLimitSelect').value = fpsLimit; document.getElementById('showFpsToggle').checked = showFps; setFpsLimit(fpsLimit); setShowFps(showFps); }
+
+            // ---- Взаимодействие с мышью/тач ----
+            function getTileFromPoint(clientX,clientY) { const rect=canvas.getBoundingClientRect(); const scaleX=canvas.width/rect.width; const scaleY=canvas.height/rect.height; let canvasX=(clientX-rect.left)*scaleX; let canvasY=(clientY-rect.top)*scaleY; let col=Math.floor(canvasX/tileSize); let row=Math.floor(canvasY/tileSize); if(row>=0 && row<rows && col>=0 && col<cols) return {row,col}; return null; }
+            function onDragStart(e) { if(isProcessing) return; e.preventDefault(); let clientX,clientY; if(e.touches) { clientX=e.touches[0].clientX; clientY=e.touches[0].clientY; } else { clientX=e.clientX; clientY=e.clientY; } let tile=getTileFromPoint(clientX,clientY); if(!tile) return; if(board[tile.row][tile.col]===BOMB_TYPE) { explodeBomb(tile.row,tile.col); return; } if(isWall(tile.row,tile.col)) return; dragActive=true; dragStartRow=tile.row; dragStartCol=tile.col; dragTargetRow=tile.row; dragTargetCol=tile.col; drawBoard(); }
+            function onDragMove(e) { if(!dragActive) return; e.preventDefault(); let clientX,clientY; if(e.touches) { clientX=e.touches[0].clientX; clientY=e.touches[0].clientY; } else { clientX=e.clientX; clientY=e.clientY; } let tile=getTileFromPoint(clientX,clientY); if(tile) { dragTargetRow=tile.row; dragTargetCol=tile.col; } else { dragTargetRow=-1; dragTargetCol=-1; } drawBoard(); }
+            function onDragEnd(e) { if(!dragActive) return; e.preventDefault(); let clientX,clientY; if(e.changedTouches) { clientX=e.changedTouches[0].clientX; clientY=e.changedTouches[0].clientY; } else { clientX=e.clientX; clientY=e.clientY; } let tile=getTileFromPoint(clientX,clientY); if(tile && dragStartRow!==-1 && dragStartCol!==-1) { if(dragTargetRow===-1||dragTargetCol===-1) { dragTargetRow=tile.row; dragTargetCol=tile.col; } if(Math.abs(dragStartRow-dragTargetRow)+Math.abs(dragStartCol-dragTargetCol)===1) trySwap(dragStartRow,dragStartCol,dragTargetRow,dragTargetCol); } dragActive=false; dragStartRow=-1; dragStartCol=-1; dragTargetRow=-1; dragTargetCol=-1; drawBoard(); }
+            function explodeBomb(row,col) { if (board[row][col] !== BOMB_TYPE) return; isProcessing = true; if(sfxEnabled) playBombSound(); for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) if(!isWall(r,c)) board[r][c] = -1; if(gameMode==="endless" && !localMultiplayer) { score+=1000; document.getElementById('scoreValue').innerText=score; addCoins(1000); } else if (localMultiplayer) { addCoins(1000); } for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) if(!isWall(r,c)) board[r][c]=Math.floor(Math.random()*TYPES); clearMatchesAndRefill(); drawBoard(); isProcessing=false; saveGameState(); if (localMultiplayer) finishTurn(); }
+            function finishTurn() { if (!localMultiplayer) return; if (!turnLock) { turnLock = true; switchPlayer(); setTimeout(() => { turnLock = false; }, 300); } }
             function trySwap(r1,c1,r2,c2) {
                 if (isProcessing) return false;
                 if (Math.abs(r1-r2)+Math.abs(c1-c2)!==1) return false;
@@ -778,7 +911,7 @@
                 isProcessing = true;
                 animateSwap(r1,c1,r2,c2,()=>{
                     if (hasMatches()) processMatchesAndCascade();
-                    else animateSwap(r2,c2,r1,c1,()=>{ isProcessing=false; drawBoard(); });
+                    else animateSwap(r2,c2,r1,c1,()=>{ isProcessing=false; drawBoard(); if (localMultiplayer) finishTurn(); });
                 });
                 return true;
             }
@@ -799,24 +932,74 @@
                         else { drawBoard(); step(); } 
                     } else { 
                         if(!hasValidMoves()) shuffleBoard(); 
-                        else isProcessing = false; 
+                        else { isProcessing = false; if (localMultiplayer) finishTurn(); }
                         drawBoard(); saveGameState(); 
                     } 
                 } 
                 step(); 
             }
-            function explodeBomb(row,col) { if (board[row][col] !== BOMB_TYPE) return; isProcessing = true; if(sfxEnabled) playBombSound(); for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) if(!isWall(r,c)) board[r][c] = -1; if(gameMode==="endless") { score+=1000; document.getElementById('scoreValue').innerText=score; addCoins(1000); } for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) if(!isWall(r,c)) board[r][c]=Math.floor(Math.random()*TYPES); clearMatchesAndRefill(); drawBoard(); isProcessing=false; saveGameState(); }
+
+            // ---- Загрузка изображений ----
             function saveImagesToLocalStorage() { let imagesData=[]; for(let i=0;i<TYPES;i++) { if(tileImages[i] && tileImages[i].src && tileImages[i].src.startsWith('data:')) imagesData.push(tileImages[i].src); else imagesData.push(null); } localStorage.setItem('match3_images', JSON.stringify(imagesData)); if(bombImage && bombImage.src && bombImage.src.startsWith('data:')) localStorage.setItem('match3_bomb_image', bombImage.src); else localStorage.removeItem('match3_bomb_image'); }
             function loadImagesFromLocalStorage() { const savedImages = localStorage.getItem('match3_images'); if(savedImages) { const imagesData=JSON.parse(savedImages); for(let i=0;i<TYPES;i++) if(imagesData[i]) { const img=new Image(); img.src=imagesData[i]; tileImages[i]=img; } } const savedBomb = localStorage.getItem('match3_bomb_image'); if(savedBomb) { const bombImg=new Image(); bombImg.src=savedBomb; bombImage=bombImg; } }
             function loadAssetsFromInputs() { for(let i=0;i<TYPES;i++) { const input=document.getElementById(`asset${i}`); if(input.files && input.files[0]) { const reader=new FileReader(); reader.onload=(e)=>{ const img=new Image(); img.src=e.target.result; tileImages[i]=img; drawBoard(); saveImagesToLocalStorage(); }; reader.readAsDataURL(input.files[0]); } } const bombInput=document.getElementById('bombAsset'); if(bombInput.files && bombInput.files[0]) { const reader=new FileReader(); reader.onload=(e)=>{ const img=new Image(); img.src=e.target.result; bombImage=img; drawBoard(); saveImagesToLocalStorage(); }; reader.readAsDataURL(bombInput.files[0]); } }
-            function getTileFromPoint(clientX,clientY) { const rect=canvas.getBoundingClientRect(); const scaleX=canvas.width/rect.width; const scaleY=canvas.height/rect.height; let canvasX=(clientX-rect.left)*scaleX; let canvasY=(clientY-rect.top)*scaleY; let col=Math.floor(canvasX/tileSize); let row=Math.floor(canvasY/tileSize); if(row>=0 && row<rows && col>=0 && col<cols) return {row,col}; return null; }
-            function onDragStart(e) { if(isProcessing) return; e.preventDefault(); let clientX,clientY; if(e.touches) { clientX=e.touches[0].clientX; clientY=e.touches[0].clientY; } else { clientX=e.clientX; clientY=e.clientY; } let tile=getTileFromPoint(clientX,clientY); if(!tile) return; if(board[tile.row][tile.col]===BOMB_TYPE) { explodeBomb(tile.row,tile.col); return; } if(isWall(tile.row,tile.col)) return; dragActive=true; dragStartRow=tile.row; dragStartCol=tile.col; dragTargetRow=tile.row; dragTargetCol=tile.col; drawBoard(); }
-            function onDragMove(e) { if(!dragActive) return; e.preventDefault(); let clientX,clientY; if(e.touches) { clientX=e.touches[0].clientX; clientY=e.touches[0].clientY; } else { clientX=e.clientX; clientY=e.clientY; } let tile=getTileFromPoint(clientX,clientY); if(tile) { dragTargetRow=tile.row; dragTargetCol=tile.col; } else { dragTargetRow=-1; dragTargetCol=-1; } drawBoard(); } // drawBoard вызывается только при изменении подсветки
-            function onDragEnd(e) { if(!dragActive) return; e.preventDefault(); let clientX,clientY; if(e.changedTouches) { clientX=e.changedTouches[0].clientX; clientY=e.changedTouches[0].clientY; } else { clientX=e.clientX; clientY=e.clientY; } let tile=getTileFromPoint(clientX,clientY); if(tile && dragStartRow!==-1 && dragStartCol!==-1) { if(dragTargetRow===-1||dragTargetCol===-1) { dragTargetRow=tile.row; dragTargetCol=tile.col; } if(Math.abs(dragStartRow-dragTargetRow)+Math.abs(dragStartCol-dragTargetCol)===1) trySwap(dragStartRow,dragStartCol,dragTargetRow,dragTargetCol); } dragActive=false; dragStartRow=-1; dragStartCol=-1; dragTargetRow=-1; dragTargetCol=-1; drawBoard(); }
-            function resetGame() { if(gameMode==="story") { storyGoal=generateRandomGoal(); storyCollected=0; updateGoalUI(); document.getElementById('scoreValue').innerText=`0/${storyGoal.count}`; } else { score=0; document.getElementById('scoreValue').innerText="0"; } coins=0; updateCoinsUI(); initBoard(); isProcessing=false; drawBoard(); saveGameState(); }
-            function showMenu() { gameContainer.classList.remove('visible'); mainMenu.style.display='flex'; modeSelectDiv.style.display='none'; if(musicEnabled && audioCtx) { stopMusic(); startMusic(); } }
-            
-            // ========== ИНИЦИАЛИЗАЦИЯ ==========
+
+            // ---------- AI АССИСТЕНТ ----------
+            const aiModal = document.getElementById('aiModal');
+            const aiMessagesDiv = document.getElementById('aiMessages');
+            const aiInput = document.getElementById('aiInput');
+            const aiSendBtn = document.getElementById('aiSendBtn');
+            const aiClearBtn = document.getElementById('aiClearBtn');
+            const closeAiBtn = document.getElementById('closeAiBtn');
+            const aiAssistantBtn = document.getElementById('aiAssistantBtn');
+            function addAIMessage(text, isUser = false) {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'ai-message' + (isUser ? ' user' : '');
+                msgDiv.innerText = text;
+                aiMessagesDiv.appendChild(msgDiv);
+                aiMessagesDiv.scrollTop = aiMessagesDiv.scrollHeight;
+            }
+            function getAIResponse(question) {
+                const q = question.toLowerCase().trim();
+                if (q.includes('что ты знаешь') || q.includes('что ты умеешь') || q.includes('твои возможности') ||
+                    q.includes('твои функции') || q.includes('расскажи о себе') || q.includes('кто ты') ||
+                    q.includes('что ты можешь') || q.includes('список команд')) {
+                    return "🤖 Я — AI-ассистент игры NEON MATCH-3. Вот что я умею:\n\n🎮 **Помощь по игре:**\n• Правила («как играть»)\n• Бомбы («бомба», «4+ в ряд»)\n• Монеты и магазин\n• Подсказки\n• Режимы (бесконечный/сюжетный/локальный 2 игрока)\n• Типы полей и стены\n• Настройки звука, FPS, свои картинки\n• Сброс прогресса\n• Решение лагов\n• Стратегии\n\n💬 **Общие темы:** погода, еда, кино, музыка, отношения, философия, шутки, животные, технологии, спорт, путешествия, здоровье.\n\nПросто спроси меня о чём угодно!";
+                }
+                if (q.includes('как играть') || q.includes('правила') || q.includes('цель') || q.includes('чё делать')) return "🎮 Цель — собирать ряды из 3+ одинаковых фишек, меняя их местами. Чем длиннее ряд, тем больше очков и монет. Фишки исчезают, новые падают сверху. В локальном режиме ход переходит после каждого обмена.";
+                if (q.includes('бомб') || q.includes('4+') || q.includes('взрыв')) return "💣 Если собрать 4+ фишки в ряд, появляется БОМБА. Кликни на неё — взорвёт всё поле, даст 1000 очков и монет. Бомбу можно купить в магазине за 50 монет.";
+                if (q.includes('монет') || q.includes('заработать') || q.includes('деньги')) return "💰 Монеты даются за каждый собранный ряд (10 монет за 3 фишки, больше за длинные). Также бонусы за задания в сюжетном режиме и взрыв бомбы.";
+                if (q.includes('магазин') || q.includes('купить')) return "🛒 В магазине: бомба (50), перемешивание (30), подсказка (20). Нажми кнопку «МАГАЗИН» во время игры.";
+                if (q.includes('подсказк') || q.includes('хинт') || q.includes('нет ходов')) return "🔮 Подсказка (20 монет) подсвечивает возможный ход на 2 секунды. Если ходов нет — купи перемешивание.";
+                if (q.includes('режим') || q.includes('сюжет') || q.includes('бесконечный') || q.includes('локальный')) return "📖 Три режима: Бесконечный, Сюжетный (собирай заданные фишки) и Локальная игра на двоих (по очереди).";
+                if (q.includes('поле') || q.includes('стены') || q.includes('препятствия')) return "🗺️ В настройках можно выбрать: классическое 8x8, маленькое 6x6, узкое 8x6, квадратное 7x7 и с препятствиями (стены, которые нельзя двигать).";
+                if (q.includes('звук') || q.includes('музыка') || q.includes('fps')) return "🎵 В настройках можно регулировать громкость, ограничивать FPS, загружать свою музыку и звуки сбора.";
+                if (q.includes('графика') || q.includes('изображени') || q.includes('скин')) return "🎨 Вы можете загрузить свои изображения для фишек и бомбы в разделе настроек («Свои значки»).";
+                if (q.includes('привет') || q.includes('здравствуй') || q.includes('хай')) return "🤖 Привет! Я AI-ассистент. Спрашивай о чём угодно — помогу и в игре, и просто поболтаю.";
+                if (q.includes('сброс') || q.includes('удалить прогресс')) return "⚠️ В настройках есть кнопка «СБРОС ПРОГРЕССА» — удаляет все сохранённые данные. Действие необратимо.";
+                if (q.includes('лаг') || q.includes('тормоз') || q.includes('баг')) return "🐞 Если тормозит, попробуйте снизить ограничение FPS в настройках (30 или 60).";
+                if (q.includes('стратеги') || q.includes('совет') || q.includes('как выиграть')) return "💡 Советы: собирайте ряды из 4+ фишек для бомбы, в сюжетном режиме фокусируйтесь на цели, используйте бомбу сразу, копите монеты.";
+                if (q.includes('погод') || q.includes('дождь') || q.includes('солнце')) return ["☀️ Погода отличная, сыграем?", "🌧️ Дождь — лучшее время для игры!", "❄️ На улице холодно, а в игре тепло от фишек."][Math.floor(Math.random()*3)];
+                if (q.includes('еда') || q.includes('пицца') || q.includes('вкусно')) return ["🍕 Пицца — это любовь. А ты любишь?", "🍔 Игра и бургер — лучший вечер.", "🍰 Десерт после победы — отличная награда."][Math.floor(Math.random()*3)];
+                if (q.includes('фильм') || q.includes('кино') || q.includes('сериал')) return ["🎬 Люблю фантастику! «Матрица» — топ.", "📺 Сериалы залипательны, как наша игра.", "🍿 Кино под попкорн — отлично."][Math.floor(Math.random()*3)];
+                if (q.includes('музык') || q.includes('песн')) return ["🎵 Музыка — душа игры. Какой жанр любишь?", "🎸 Можешь загрузить свою музыку в настройках!", "🎧 Слушать треки во время матчинга — кайф."][Math.floor(Math.random()*3)];
+                if (q.includes('шутк') || q.includes('анекдот')) return ["😂 Почему фишки не ходят на свидания? Потому что они всегда в ряду!", "🤣 Какая любимая игра у бомбы? «Найди и взорви»!"][Math.floor(Math.random()*2)];
+                if (q.includes('кот') || q.includes('собак') || q.includes('животн')) return ["🐱 Кошки обожают играть с фишками. А у тебя есть питомец?", "🐶 Собаки — лучшие друзья, они бы одобрили игру."][Math.floor(Math.random()*2)];
+                if (q.includes('технолог') || q.includes('компьютер') || q.includes('код')) return "💻 Игра написана на HTML, CSS и JavaScript. Можешь посмотреть код и модифицировать её!";
+                if (q.includes('спорт') || q.includes('футбол')) return "⚽ Спорт — это здорово! А после тренировки можно расслабиться за матч-3.";
+                if (q.includes('путешеств') || q.includes('море')) return "✈️ Путешествия расширяют кругозор. А в игре можно путешествовать по разным типам полей!";
+                if (q.includes('здоров') || q.includes('сон') || q.includes('устал')) return "🛌 Здоровье превыше всего. Если устал — отдохни, игра никуда не убежит.";
+                return "🤖 Я пока не знаю ответа. Спроси о чём-нибудь другом: о погоде, еде, кино, музыке, стратегии, правилах... Или просто спроси «как играть».";
+            }
+            function sendUserQuestion() { const text = aiInput.value.trim(); if (!text) return; addAIMessage(text, true); aiInput.value = ''; setTimeout(() => addAIMessage(getAIResponse(text)), 100); }
+            aiSendBtn.addEventListener('click', sendUserQuestion);
+            aiInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendUserQuestion(); });
+            aiClearBtn.addEventListener('click', () => { aiMessagesDiv.innerHTML = ''; addAIMessage("Привет! Я твой игровой помощник."); });
+            closeAiBtn.addEventListener('click', () => aiModal.style.display = 'none');
+            aiAssistantBtn.addEventListener('click', () => aiModal.style.display = 'flex');
+            aiModal.addEventListener('click', (e) => { if (e.target === aiModal) aiModal.style.display = 'none'; });
+
+            // ---------- ИНИЦИАЛИЗАЦИЯ ----------
             const mainMenu = document.getElementById('mainMenu');
             const modeSelectDiv = document.getElementById('modeSelect');
             const gameContainer = document.getElementById('gameContainer');
@@ -824,6 +1007,7 @@
             const settingsBtn = document.getElementById('settingsBtn');
             const endlessModeBtn = document.getElementById('endlessModeBtn');
             const storyModeBtn = document.getElementById('storyModeBtn');
+            const localModeBtn = document.getElementById('localModeBtn');
             const cancelModeBtn = document.getElementById('cancelModeBtn');
             const menuReturnBtn = document.getElementById('menuReturnBtn');
             const gameSettingsBtn = document.getElementById('gameSettingsBtn');
@@ -843,20 +1027,21 @@
             const fieldTypeSelect = document.getElementById('fieldTypeSelect');
             const fpsLimitSelect = document.getElementById('fpsLimitSelect');
             const showFpsToggle = document.getElementById('showFpsToggle');
-            
-            customMusicInput.addEventListener('change', (e) => { if(e.target.files.length) { const file=e.target.files[0]; const url=URL.createObjectURL(file); if(customMusicAudio) customMusicAudio.pause(); customMusicAudio=new Audio(url); customMusicAudio.loop=true; customMusicAudio.volume=musicVolume; if(musicEnabled) startMusic(); saveAudioSettings(); } });
+
+            customMusicInput.addEventListener('change', (e) => { if(e.target.files.length) { const url=URL.createObjectURL(e.target.files[0]); if(customMusicAudio) customMusicAudio.pause(); customMusicAudio=new Audio(url); customMusicAudio.loop=true; customMusicAudio.volume=musicVolume; if(musicEnabled) startMusic(); saveAudioSettings(); } });
             customMatchSoundInput.addEventListener('change', (e) => { if(e.target.files.length) { const url=URL.createObjectURL(e.target.files[0]); customMatchSoundAudio=new Audio(url); customMatchSoundAudio.volume=musicVolume; saveAudioSettings(); } });
             function showGameWithMode(mode) { if(!isAudioInit) initAudio(); modeSelectDiv.style.display='none'; mainMenu.style.display='none'; gameContainer.classList.add('visible'); resizeCanvas(); startGame(mode); }
             playBtn.addEventListener('click',()=>{ modeSelectDiv.style.display='flex'; });
             endlessModeBtn.addEventListener('click',()=>showGameWithMode('endless'));
             storyModeBtn.addEventListener('click',()=>showGameWithMode('story'));
+            localModeBtn.addEventListener('click',()=>showGameWithMode('local'));
             cancelModeBtn.addEventListener('click',()=>{ modeSelectDiv.style.display='none'; });
-            menuReturnBtn.addEventListener('click',showMenu);
-            shopBtn.addEventListener('click',()=>{ if(gameContainer.classList.contains('visible')) { updateCoinsUI(); shopModal.style.display='flex'; } });
+            menuReturnBtn.addEventListener('click',()=>{ gameContainer.classList.remove('visible'); mainMenu.style.display='flex'; modeSelectDiv.style.display='none'; if(musicEnabled && audioCtx) { stopMusic(); startMusic(); } });
+            shopBtn.addEventListener('click',()=>{ if(gameContainer.classList.contains('visible') && !localMultiplayer) { updateCoinsUI(); shopModal.style.display='flex'; } });
             closeShopBtn.addEventListener('click',()=>shopModal.style.display='none');
-            buyBombBtn.addEventListener('click',()=>{ buyBomb(); shopModal.style.display='none'; });
-            buyShuffleBtn.addEventListener('click',()=>{ buyShuffle(); shopModal.style.display='none'; });
-            buyHintBtn.addEventListener('click',()=>{ buyHint(); shopModal.style.display='none'; });
+            buyBombBtn.addEventListener('click',()=>{ if(!localMultiplayer) buyBomb(); shopModal.style.display='none'; });
+            buyShuffleBtn.addEventListener('click',()=>{ if(!localMultiplayer) buyShuffle(); shopModal.style.display='none'; });
+            buyHintBtn.addEventListener('click',()=>{ if(!localMultiplayer) buyHint(); shopModal.style.display='none'; });
             settingsBtn.addEventListener('click',()=>{ if(!isAudioInit) initAudio(); settingsModal.style.display='flex'; });
             gameSettingsBtn.addEventListener('click',()=>{ if(!isAudioInit) initAudio(); settingsModal.style.display='flex'; });
             closeSettingsBtn.addEventListener('click',()=>settingsModal.style.display='none');
@@ -868,7 +1053,6 @@
             fieldTypeSelect.addEventListener('change',(e)=>{ if(confirm('Смена поля сбросит игру?')) { setFieldType(e.target.value); resetGame(); } else fieldTypeSelect.value=localStorage.getItem('match3_field_type')||'classic'; });
             fpsLimitSelect.addEventListener('change', (e) => { setFpsLimit(parseInt(e.target.value)); });
             showFpsToggle.addEventListener('change', (e) => { setShowFps(e.target.checked); });
-            
             loadAudioSettings(); setMusicVolume(musicVolume); setMusicEnabled(musicEnabled); setSfxEnabled(sfxEnabled);
             loadFpsSettings();
             function enableAudioOnUserInteraction() { initAudio(); document.removeEventListener('click',enableAudioOnUserInteraction); document.removeEventListener('touchstart',enableAudioOnUserInteraction); }
