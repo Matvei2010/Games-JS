@@ -23,6 +23,10 @@
             position: relative;
             overflow-x: hidden;
         }
+        canvas {
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
+        }
         body::before { 
             content: "";
             position: fixed;
@@ -450,20 +454,28 @@
             .ai-chat { height: 320px; }
             .local-multiplayer-panel { flex-wrap: wrap; justify-content: center; }
         }
+        #profileNickname, #profileGmail {
+            font-family: inherit;
+            outline: none;
+        }
+        #profileNickname:focus, #profileGmail:focus {
+            box-shadow: 0 0 8px cyan;
+        }
     </style>
 </head>
 <body>
-    // Главное меню
+    <!-- Главное меню -->
     <div id="mainMenu" class="main-menu">
         <div class="menu-card">
             <h1>✦ NEON MATCH-3 ✦</h1>
             <button id="playBtn">▶ ЗАПУСТИТЬ</button>
             <button id="settingsBtn">⚡ НЕЙРО-НАСТРОЙКИ</button>
-            <div class="copyright">[ версия 0.2 ] // перетащи фишку — создай ряд</div>
-            <div class="copyright">Все права защещины.World Dev Games</div>
+            <button id="profileBtn">👤 МОЙ ПРОФИЛЬ</button>
+            <div class="copyright">[ версия 0.3 ] // перетащи фишку — создай ряд</div>
+            <div class="copyright">Все права защищены.World Dev Games</div>
         </div>
     </div>
-    // Меню выбора режима
+    <!-- Меню выбора режима -->
     <div id="modeSelect" class="mode-select" style="display: none;">
         <div class="mode-card">
             <h2>ВЫБЕРИ РЕЖИМ</h2>
@@ -473,7 +485,7 @@
             <button id="cancelModeBtn">🔙 ОТМЕНА</button>
         </div>
     </div>
-    // Игровой контейнер
+    <!-- Игровой контейнер -->
     <div id="gameContainer" class="game-container">
         <canvas id="gameCanvas" width="500" height="500"></canvas>
         <div class="info-panel" id="infoPanel">
@@ -488,7 +500,7 @@
         </div>
         <div class="copyright">👾 свайп / мышь — меняй фишки местами. 4+ в ряд → 💣 бомба</div>
     </div>
-    // Магазин
+    <!-- Магазин -->
     <div id="shopModal" class="modal">
         <div class="modal-content">
             <h3>🛸 КИБЕР-МАРКЕТ</h3>
@@ -499,7 +511,7 @@
             <button class="close-modal" id="closeShopBtn">ЗАКРЫТЬ</button>
         </div>
     </div>
-    // Настройки
+    <!-- Настройки -->
     <div id="settingsModal" class="modal">
         <div class="modal-content">
             <h3>🔧 НЕЙРО-ИНТЕРФЕЙС</h3>
@@ -514,7 +526,6 @@
                     <option value="120">120</option>
                 </select>
             </div>
-            // Настройки игры
             <div class="setting-item"><label>📊 ПОКАЗАТЬ FPS</label><input type="checkbox" id="showFpsToggle"></div>
             <div class="field-select">
                 <label>🗺️ ГОЛО-ПОЛЕ</label>
@@ -526,7 +537,6 @@
                     <option value="obstacles">8x8 ПРЕПЯТСТВИЯ</option>
                 </select>
             </div>
-            // Настройки кастомизации
             <div class="setting-item"><label>🎶 КАСТОМНАЯ МУЗЫКА</label><input type="file" id="customMusic" accept="audio/*"></div>
             <div class="setting-item"><label>🔊 КАСТОМНЫЙ ЗВУК</label><input type="file" id="customMatchSound" accept="audio/*"></div>
             <div class="asset-grid">
@@ -542,7 +552,7 @@
             <button class="close-modal" id="closeSettingsBtn">ЗАКРЫТЬ</button>
         </div>
     </div>
-    // AI-АССИСТЕНТ
+    <!-- AI-АССИСТЕНТ -->
     <div id="aiModal" class="modal">
         <div class="modal-content" style="max-width: 550px;">
             <h3>🤖 AI-АССИСТЕНТ</h3>
@@ -559,85 +569,84 @@
             <button class="close-modal" id="closeAiBtn">ЗАКРЫТЬ</button>
         </div>
     </div>
-    // ФПС-СЧЁТЧИК
+    <!-- ФПС-СЧЁТЧИК -->
     <div id="fpsCounter" class="fps-counter">FPS: --</div>
-    // Главный скрипт
+    
     <script>
         (function(){
             // ---------- АУДИО ----------
-            let audioCtx = null; // Контекст аудио
-            let musicEnabled = true; // Включена ли музыка
-            let sfxEnabled = true; // Включены ли эффекты
-            let musicVolume = 0.5; // Громкость музыки
-            let masterGain = null; // Главный усилитель
-            let isAudioInit = false; // Инициализирован ли аудио
-            let customMusicAudio = null; // Пользовательская музыка
-            let customMatchSoundAudio = null; // Пользовательский звук совпадения
-            let musicInterval = null; // Интервал музыки
-            let currentMelody = 0; // Текущая мелодия
-            // Ноты для музыки
+            let audioCtx = null;
+            let musicEnabled = true;
+            let sfxEnabled = true;
+            let musicVolume = 0.5;
+            let masterGain = null;
+            let isAudioInit = false;
+            let customMusicAudio = null;
+            let customMatchSoundAudio = null;
+            let musicInterval = null;
+            let currentMelody = 0;
             const melodies = [
                 { name: "Калинка", notes: [523.25,587.33,622.25,523.25,440.00,392.00,349.23,392.00,440.00,392.00,349.23,311.13,293.66,261.63,293.66,261.63,349.23,392.00,440.00,523.25,523.25,493.88,440.00,392.00,349.23,311.13,293.66,261.63], waveType: "triangle", intervalMs: 550 },
                 { name: "Веселая", notes: [523.25,587.33,659.25,523.25,493.88,440.00,392.00,440.00,493.88,523.25,587.33,659.25,698.46,659.25,587.33,523.25], waveType: "sine", intervalMs: 480 },
                 { name: "Электро", notes: [440.00,554.37,659.25,880.00,659.25,554.37,440.00,329.63,293.66,329.63,440.00,554.37,659.25,440.00], waveType: "sawtooth", intervalMs: 400 }
             ];
-            let currentNoteIndex = 0; // Текущий индекс ноты
-            // Инициализация аудио
+            let currentNoteIndex = 0;
             function playMelodyTick() {
-                if (!musicEnabled || !audioCtx || !masterGain) return; // Проверяем, включена ли музыка и инициализирован ли аудио
-                const melody = melodies[currentMelody]; // Выбираем текущую мелодию
-                const note = melody.notes[currentNoteIndex % melody.notes.length];  // Получаем текущую ноту
-                const now = audioCtx.currentTime;   // Текущее время
-                const osc = audioCtx.createOscillator();    // Создаем осциллятор
-                const gain = audioCtx.createGain(); // Создаем усилитель
-                osc.type = melody.waveType; // Устанавливаем тип волны
-                osc.frequency.value = note; // Устанавливаем частоту ноты
-                gain.gain.setValueAtTime(0.55 * musicVolume, now);  // Устанавливаем громкость ноты
-                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);  // Затухание ноты
-                osc.connect(gain);  // Подключаем усилитель к осциллятору
-                gain.connect(masterGain);   // Подключаем усилитель к главному усилителю
-                osc.start();        // Запускаем осциллятор
-                osc.stop(now + 0.3);   // Останавливаем осциллятор через 0.3 секунды
-                currentNoteIndex++; // Увеличиваем индекс ноты
+                if (!musicEnabled || !audioCtx || !masterGain) return;
+                const melody = melodies[currentMelody];
+                const note = melody.notes[currentNoteIndex % melody.notes.length];
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = melody.waveType;
+                osc.frequency.value = note;
+                gain.gain.setValueAtTime(0.55 * musicVolume, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+                osc.connect(gain);
+                gain.connect(masterGain);
+                osc.start();
+                osc.stop(now + 0.3);
+                currentNoteIndex++;
             }
-            // Инициализация аудио
             function startSynthMusic() { 
-                if (musicInterval) clearInterval(musicInterval);    // Очищаем интервал, если он уже запущен
-                if (!musicEnabled || !audioCtx || !masterGain) return;    // Проверяем, включена ли музыка и инициализирован ли аудио
-                const melody = melodies[currentMelody]; musicInterval = setInterval(() => { // Запускаем интервал для музыки
-                    if (musicEnabled && audioCtx && masterGain) playMelodyTick(); }, melody.intervalMs); }  
-            // Остановка музыки
+                if (musicInterval) clearInterval(musicInterval);
+                if (!musicEnabled || !audioCtx || !masterGain) return;
+                const melody = melodies[currentMelody]; musicInterval = setInterval(() => { if (musicEnabled && audioCtx && masterGain) playMelodyTick(); }, melody.intervalMs);
+            }  
             function stopMusic() { 
-                if (musicInterval) { clearInterval(musicInterval); musicInterval = null; } // Очищаем интервал
-                if (customMusicAudio) { customMusicAudio.pause(); customMusicAudio.currentTime = 0; } }// Пауза и сброс времени
-            function startMusic() { stopMusic(); // Останавливаем музыку
-                if (!musicEnabled) return; // Проверяем, включена ли музыка
-                if (customMusicAudio && customMusicAudio.src && customMusicAudio.src !== "") { // Если есть пользовательская музыка
-                    customMusicAudio.volume = musicVolume; // Устанавливаем громкость
-                    customMusicAudio.loop = true; // Включаем повтор
-                    customMusicAudio.play().catch(e=>{}); } // Запускаем музыку
-                    else { startSynthMusic(); } } // Запускаем синтетическую музыку        
-            function setMusicEnabled(enabled) { musicEnabled = enabled; // Устанавливаем включение музыки
-                saveAudioSettings(); // Сохраняем настройки
-                if (enabled) startMusic(); // Если включено, запускаем музыку
-                else stopMusic(); } // Если выключено, останавливаем музыку
-            function setSfxEnabled(enabled) { sfxEnabled = enabled; saveAudioSettings(); } // Устанавливаем включение эффектов
-
-            function setMusicVolume(volume) { musicVolume = Math.min(1, Math.max(0, volume)); // Устанавливаем громкость
-                if (masterGain) masterGain.gain.value = musicVolume; // Устанавливаем громкость усилителя
-                if (customMusicAudio) customMusicAudio.volume = musicVolume; saveAudioSettings(); } // Сохраняем настройки
-            // ---------- АВТОМАТИЗАЦИЯ ----------
-            function saveAudioSettings() { // cохраняем настройки
-                localStorage.setItem('match3MusicEnabled', musicEnabled);  // Сохраняем настройки
-                localStorage.setItem('match3SfxEnabled', sfxEnabled);   // Сохраняем настройки
-                localStorage.setItem('match3MusicVolume', musicVolume);     // Сохраняем настройки
-                localStorage.setItem('match3CurrentMelody', currentMelody);     // Сохраняем настройки
-                if (customMusicAudio && customMusicAudio.src) localStorage.setItem('match3CustomMusic', customMusicAudio.src); // Сохраняем настройки
-                else localStorage.removeItem('match3CustomMusic'); if (customMatchSoundAudio && customMatchSoundAudio.src) // Сохраняем настройки
-                localStorage.setItem('match3CustomMatchSound', customMatchSoundAudio.src);  // Сохраняем настройки
-                else localStorage.removeItem('match3CustomMatchSound'); }   // Сохраняем настройки
-            function loadAudioSettings() { // загружаем настройки
-                const savedMusic = localStorage.getItem('match3MusicEnabled');  // Загружаем настройки
+                if (musicInterval) { clearInterval(musicInterval); musicInterval = null; }
+                if (customMusicAudio) { customMusicAudio.pause(); customMusicAudio.currentTime = 0; }
+            }
+            function startMusic() { stopMusic();
+                if (!musicEnabled) return;
+                if (customMusicAudio && customMusicAudio.src && customMusicAudio.src !== "") {
+                    customMusicAudio.volume = musicVolume;
+                    customMusicAudio.loop = true;
+                    customMusicAudio.play().catch(e=>{});
+                } else { startSynthMusic(); }
+            }        
+            function setMusicEnabled(enabled) { musicEnabled = enabled;
+                saveAudioSettings();
+                if (enabled) startMusic();
+                else stopMusic();
+            }
+            function setSfxEnabled(enabled) { sfxEnabled = enabled; saveAudioSettings(); }
+            function setMusicVolume(volume) { musicVolume = Math.min(1, Math.max(0, volume));
+                if (masterGain) masterGain.gain.value = musicVolume;
+                if (customMusicAudio) customMusicAudio.volume = musicVolume; saveAudioSettings();
+            }
+            function saveAudioSettings() {
+                localStorage.setItem('match3MusicEnabled', musicEnabled);
+                localStorage.setItem('match3SfxEnabled', sfxEnabled);
+                localStorage.setItem('match3MusicVolume', musicVolume);
+                localStorage.setItem('match3CurrentMelody', currentMelody);
+                if (customMusicAudio && customMusicAudio.src) localStorage.setItem('match3CustomMusic', customMusicAudio.src);
+                else localStorage.removeItem('match3CustomMusic');
+                if (customMatchSoundAudio && customMatchSoundAudio.src) localStorage.setItem('match3CustomMatchSound', customMatchSoundAudio.src);
+                else localStorage.removeItem('match3CustomMatchSound');
+            }
+            function loadAudioSettings() {
+                const savedMusic = localStorage.getItem('match3MusicEnabled');
                 if (savedMusic !== null) musicEnabled = savedMusic === 'true'; 
                 const savedSfx = localStorage.getItem('match3SfxEnabled'); 
                 if (savedSfx !== null) sfxEnabled = savedSfx === 'true'; 
@@ -653,10 +662,12 @@
                     audio.loop = true; audio.volume = musicVolume; customMusicAudio = audio; 
                     if (musicEnabled) startMusic(); } 
                     const customSoundSrc = localStorage.getItem('match3CustomMatchSound'); 
-                    if (customSoundSrc) { const audio = new Audio(customSoundSrc); audio.volume = musicVolume; customMatchSoundAudio = audio; } }
+                    if (customSoundSrc) { const audio = new Audio(customSoundSrc); audio.volume = musicVolume; customMatchSoundAudio = audio; }
+            }
             function initAudio() { 
                 if (isAudioInit) return; 
-                if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); masterGain = audioCtx.createGain(); masterGain.gain.value = musicVolume; masterGain.connect(audioCtx.destination); } isAudioInit = true; if (musicEnabled) startMusic(); }
+                if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); masterGain = audioCtx.createGain(); masterGain.gain.value = musicVolume; masterGain.connect(audioCtx.destination); } isAudioInit = true; if (musicEnabled) startMusic();
+            }
             function playMatchSound() { 
                 if (!sfxEnabled) return; 
                 if (customMatchSoundAudio && customMatchSoundAudio.src) { 
@@ -669,7 +680,8 @@
                         gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2); 
                         osc.frequency.exponentialRampToValueAtTime(440, now + 0.15); 
                         osc.connect(gain); gain.connect(masterGain); osc.start(); 
-                        osc.stop(now + 0.2); } }
+                        osc.stop(now + 0.2); }
+            }
             function playBombSound() { 
                 if (!sfxEnabled) return; 
                 if (audioCtx) { 
@@ -686,40 +698,139 @@
                     osc.stop(now + 0.5); } }
 
             // ---------- ИГРОВАЯ ЛОГИКА ----------
-            let rows = 8, cols = 8; // Размеры поля
-            const TYPES = 6; // Количество типов ячеек
-            const BOMB_TYPE = -2; // Тип бомбы
-            const WALL_TYPE = -3; // Тип стены
-            let board = []; // Поле
-            let score = 0;  // Счет
-            let coins = 0;  // Монеты   
-            let isProcessing = false; // Обработка хода
-            let tileImages = [];    // Изображения ячеек
-            let bombImage = null;   // Изображение бомбы
-            const defaultColors = ["#e34234","#ffa500","#c04040","#ff69b4","#8b5a2b","#3c9e3c"]; // Цвета по умолчанию
-            const defaultEmojis = ["🍪","🍩","🍬","🍫","🍡","⭐"]; // Эмоджи по умолчанию
-            const canvas = document.getElementById('gameCanvas'); // Холст
-            const ctx = canvas.getContext('2d'); // Контекст
-            let tileSize = 1; // Размер ячейки
-            let dragActive = false; // Драг активен
-            let dragStartRow = -1, dragStartCol = -1; // Начальная позиция драга
-            let dragTargetRow = -1, dragTargetCol = -1; // Конечная позиция драга
-            let gameMode = "endless"; // Режим игры
-            let storyGoal = { type: 0, count: 5, name: "" }; // Цель истории
-            let storyCollected = 0; // Собрано в истории
-            let hintCells = []; // Ячейки подсказки
-            let hintTimeout = null; // Таймаут подсказки
+            let rows = 8, cols = 8;
+            const TYPES = 6;
+            const BOMB_TYPE = -2;
+            const WALL_TYPE = -3;
+            let board = [];
+            let score = 0;
+            let coins = 0;
+            let isProcessing = false;
+            let tileImages = [];
+            let bombImage = null;
+            const defaultColors = ["#e34234","#ffa500","#c04040","#ff69b4","#8b5a2b","#3c9e3c"];
+            const defaultEmojis = ["🍪","🍩","🍬","🍫","🍡","⭐"];
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            let tileSize = 1;
+            let dragActive = false;
+            let dragStartRow = -1, dragStartCol = -1;
+            let dragTargetRow = -1, dragTargetCol = -1;
+            let gameMode = "endless";
+            let storyGoal = { type: 0, count: 5, name: "" };
+            let storyCollected = 0;
+            let hintCells = [];
+            let hintTimeout = null;
+            
+            // ---------- СИСТЕМА ПЕРСОНАЖА ----------
+            let playerNickname = localStorage.getItem('player_nickname') || '';
+            let playerGmail = localStorage.getItem('player_gmail') || '';
+            let playerLevel = parseInt(localStorage.getItem('player_level') || '1');
+            let playerExp = parseInt(localStorage.getItem('player_exp') || '0');
+            let expToNextLevel = 100;
 
             // ---------- ЛОКАЛЬНЫЙ МУЛЬТИПЛЕЕР ----------
-            let localMultiplayer = false; // Локальный мультиплеер
-            let currentPlayer = 0; // Текущий игрок
-            let playerScores = [0, 0]; // Счет игроков
-            let turnLock = false; // Блокировка хода
+            let localMultiplayer = false;
+            let currentPlayer = 0;
+            let playerScores = [0, 0];
+            let turnLock = false;
+
+            // ---------- ФУНКЦИИ ПЕРСОНАЖА ----------
+            function showProfileModal() {
+                const modalHtml = `
+                    <div id="profileModal" class="modal" style="display: flex;">
+                        <div class="modal-content">
+                            <h3>👤 ПРОФИЛЬ ИГРОКА</h3>
+                            <div class="setting-item">
+                                <label>🎮 НИКНЕЙМ:</label>
+                                <input type="text" id="profileNickname" value="${playerNickname}" placeholder="Введите ник" style="background:#0a1428; border:1px solid cyan; border-radius:40px; padding:8px 16px; color:cyan;">
+                            </div>
+                            <div class="setting-item">
+                                <label>📧 GMAIL:</label>
+                                <input type="email" id="profileGmail" value="${playerGmail}" placeholder="example@gmail.com" style="background:#0a1428; border:1px solid cyan; border-radius:40px; padding:8px 16px; color:cyan;">
+                            </div>
+                            <div class="setting-item">
+                                <label>⭐ УРОВЕНЬ:</label>
+                                <span style="color:#0ff; font-size:1.5rem;">${playerLevel}</span>
+                            </div>
+                            <div class="setting-item">
+                                <label>📊 ОПЫТ:</label>
+                                <div style="width:100%; margin-top:10px;">
+                                    <div style="background:#0a1428; border-radius:30px; height:20px; overflow:hidden;">
+                                        <div style="width:${(playerExp / expToNextLevel) * 100}%; background:linear-gradient(90deg,#0ff,#f0f); height:100%; transition:width 0.3s;"></div>
+                                    </div>
+                                    <div style="text-align:center; margin-top:5px;">${playerExp} / ${expToNextLevel} XP</div>
+                                </div>
+                            </div>
+                            <button id="saveProfileBtn" style="margin-top:15px;">💾 СОХРАНИТЬ</button>
+                            <button id="closeProfileBtn" class="close-modal">ЗАКРЫТЬ</button>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                
+                document.getElementById('saveProfileBtn').addEventListener('click', () => {
+                    const newNickname = document.getElementById('profileNickname').value.trim();
+                    const newGmail = document.getElementById('profileGmail').value.trim();
+                    
+                    if (newNickname) {
+                        playerNickname = newNickname;
+                        localStorage.setItem('player_nickname', playerNickname);
+                    }
+                    if (newGmail) {
+                        playerGmail = newGmail;
+                        localStorage.setItem('player_gmail', playerGmail);
+                    }
+                    
+                    updateProfileUI();
+                    document.getElementById('profileModal').remove();
+                    alert('Профиль сохранен!');
+                });
+                
+                document.getElementById('closeProfileBtn').addEventListener('click', () => {
+                    document.getElementById('profileModal').remove();
+                });
+            }
+
+            function addExperience(exp) {
+                if (gameMode === "story") {
+                    playerExp += exp;
+                    let leveledUp = false;
+                    
+                    while (playerExp >= expToNextLevel) {
+                        playerExp -= expToNextLevel;
+                        playerLevel++;
+                        expToNextLevel = Math.floor(expToNextLevel * 1.2);
+                        leveledUp = true;
+                    }
+                    
+                    localStorage.setItem('player_level', playerLevel);
+                    localStorage.setItem('player_exp', playerExp);
+                    
+                    if (leveledUp) {
+                        alert(`🌟 ПОЗДРАВЛЯЮ! Ты достиг ${playerLevel} уровня! 🌟`);
+                        if (sfxEnabled) playMatchSound();
+                    }
+                    
+                    updateProfileUI();
+                    saveGameState();
+                }
+            }
+
+            function updateProfileUI() {
+                const profileInfo = document.getElementById('profileInfo');
+                if (profileInfo) {
+                    profileInfo.innerHTML = `
+                        <div style="font-size:0.9rem;">👤 ${playerNickname || 'Гость'}</div>
+                        <div style="font-size:0.8rem;">⭐ Ур.${playerLevel}</div>
+                    `;
+                }
+            }
 
             // ---------- UI ----------
             function updateLocalUI() {
-                if (!localMultiplayer) return; // Проверяем локальный мультиплеер
-                const panel = document.getElementById('localPanel'); // Получаем панель
+                if (!localMultiplayer) return;
+                const panel = document.getElementById('localPanel');
                 panel.innerHTML = `
                     <div class="player-score ${currentPlayer === 0 ? 'active' : ''}" style="border-right: 1px solid cyan; padding-right: 16px;">
                         <div class="player-name">👾 ИГРОК 1</div>
@@ -764,18 +875,22 @@
             // ---- Вспомогательные функции ----
             function getItemNameByType(type) { 
                 const names = ["🍪 Печенак", "🍩 Пончиков", "🍬 Леденец", "🍫 Шоколада", "🍡 Карамель", "⭐ Звёзд"]; 
-                return names[type % names.length]; }
+                return names[type % names.length];
+            }
             function generateRandomGoal() { 
                 const randomType = Math.floor(Math.random() * TYPES); 
                 const randomCount = Math.floor(Math.random() * (40 - 5 + 1) + 5); 
-                return { type: randomType, count: randomCount, name: getItemNameByType(randomType) }; }
+                return { type: randomType, count: randomCount, name: getItemNameByType(randomType) };
+            }
             function getFieldConfig(type) { 
                 switch(type) { 
                     case "small": return { rows: 6, cols: 6, walls: [] }; 
                     case "narrow": return { rows: 8, cols: 6, walls: [] }; 
                     case "square": return { rows: 7, cols: 7, walls: [] }; 
                     case "obstacles": return { rows: 8, cols: 8, walls: [[2,2],[2,3],[3,2],[3,3],[5,5],[5,6],[6,5],[6,6]] }; 
-                    default: return { rows: 8, cols: 8, walls: [] }; } }
+                    default: return { rows: 8, cols: 8, walls: [] };
+                }
+            }
             function setFieldType(type) { 
                 const cfg = getFieldConfig(type); 
                 rows = cfg.rows; cols = cfg.cols; 
@@ -785,16 +900,21 @@
                 clearMatchesAndRefill(); 
                 resizeCanvas(); 
                 drawBoard(); 
-                localStorage.setItem('match3_field_type', type); }
+                localStorage.setItem('match3_field_type', type);
+            }
             function isWall(row, col) { 
-                return row >= 0 && row < rows && col >= 0 && col < cols && board[row][col] === WALL_TYPE; }
+                return row >= 0 && row < rows && col >= 0 && col < cols && board[row][col] === WALL_TYPE;
+            }
             function updateCoinsUI() { 
                 document.getElementById('coinsValue').innerText = coins; 
                 if(document.getElementById('shopCoins')) 
-                document.getElementById('shopCoins').innerText = coins; }
+                document.getElementById('shopCoins').innerText = coins;
+            }
             function addCoins(amount) {
                 if (localMultiplayer) addLocalScore(amount);
-                else { coins += amount; updateCoinsUI(); saveGameState(); }
+                else { coins += amount;
+                updateCoinsUI();
+                saveGameState(); }
             }
             function spendCoins(amount) { 
                 if (coins >= amount) { 
@@ -802,7 +922,8 @@
                     updateCoinsUI(); 
                     saveGameState(); 
                     return true; } 
-                    return false; }
+                    return false;
+            }
             function buyBomb() { 
                 if (spendCoins(100)) { 
                     let freeCells = []; 
@@ -810,17 +931,24 @@
                     for (let c=0;c<cols;c++) 
                 if (board[r][c] >= 0) freeCells.push({r,c}); 
                 if (freeCells.length===0) { addCoins(50); 
-                    alert("Нет места"); return; } 
+                    alert("Нет места"); 
+                    return; 
+                } 
                     const cell = freeCells[Math.floor(Math.random()*freeCells.length)]; 
-                    board[cell.r][cell.c] = BOMB_TYPE; drawBoard(); 
+                    board[cell.r][cell.c] = BOMB_TYPE; 
+                    drawBoard(); 
                     saveGameState(); 
                     alert("Бомба активирована");
-                 } else alert("Недостаточно монет"); }
+                 } else 
+                    alert("Недостаточно монет");
+            }
             function buyShuffle() { 
                 if (spendCoins(300)) { 
                     shuffleBoard(); 
                     alert("Поле перемешано");
-                 } else alert("Недостаточно монет"); }
+                 } else 
+                    alert("Недостаточно монет");
+            }
             function findHint() { 
                 for (let r=0;r<rows;r++) 
                 for (let c=0;c<cols;c++) { 
@@ -835,7 +963,8 @@
                             let has = hasMatches(); 
                             swapCells(r,c,r+1,c); 
                             if (has) return { row1: r, col1: c, row2: r+1, col2: c }; } } 
-                            return null; }
+                            return null;
+            }
             function buyHint() { 
                 if (spendCoins(150)) { 
                     const hint = findHint(); 
@@ -845,14 +974,16 @@
                         drawBoard(); }, 2000);
                      } else { alert("Нет ходов"); 
                      addCoins(20);
-                     } } else alert("Недостаточно монет"); }
+                     } } else alert("Недостаточно монет");
+            }
             function updateGoalUI() { 
                 const goalBox = document.getElementById('goalBox'); 
                 const goalText = document.getElementById('goalText'); 
                 if (gameMode === "story") { goalBox.style.display = "inline-block"; 
                 const remaining = storyGoal.count - storyCollected; 
                 goalText.innerText = `${storyGoal.count} ${storyGoal.name} (ост. ${remaining})`;
-             } else goalBox.style.display = "none"; }
+             } else goalBox.style.display = "none";
+            }
             function countCollectedFromMatches(removedTiles) { 
                 if (gameMode !== "story") return; 
                 const targetType = storyGoal.type; 
@@ -862,47 +993,67 @@
                 if (collectedThisStep > 0) { storyCollected += collectedThisStep;
                      updateGoalUI(); 
                      document.getElementById('scoreValue').innerText = `${storyCollected}/${storyGoal.count}`; 
-                     addCoins(collectedThisStep * 10); 
+                     addCoins(collectedThisStep * 10);
+                     addExperience(collectedThisStep * 5);
                      if (storyCollected >= storyGoal.count) { addCoins(100); storyGoal = generateRandomGoal(); 
                         storyCollected = 0; 
                         updateGoalUI();
                          initBoard();
                           saveStoryProgress();
                            drawBoard();
-                            alert(`Новое задание: ${storyGoal.count} ${storyGoal.name}`); } } }
+                            alert(`Новое задание: ${storyGoal.count} ${storyGoal.name}`); } }
+            }
             function saveStoryProgress() { 
                 localStorage.setItem('match3_story_goal_type', storyGoal.type); 
                 localStorage.setItem('match3_story_goal_count', storyGoal.count); 
                 localStorage.setItem('match3_story_goal_name', storyGoal.name); 
-                localStorage.setItem('match3_story_collected', storyCollected); }
+                localStorage.setItem('match3_story_collected', storyCollected);
+            }
             function loadStoryProgress() { 
                 const savedType = localStorage.getItem('match3_story_goal_type'); 
                 const savedCount = localStorage.getItem('match3_story_goal_count'); 
                 const savedName = localStorage.getItem('match3_story_goal_name'); 
                 const savedCollected = localStorage.getItem('match3_story_collected'); 
-                if (savedType !== null && savedCount !== null) { storyGoal = { type: parseInt(savedType), count: parseInt(savedCount), name: savedName || getItemNameByType(parseInt(savedType)) }; storyCollected = savedCollected ? parseInt(savedCollected) : 0; } else { storyGoal = generateRandomGoal(); storyCollected = 0; } updateGoalUI(); }
+                if (savedType !== null && savedCount !== null) { storyGoal = { type: parseInt(savedType), count: parseInt(savedCount), name: savedName || getItemNameByType(parseInt(savedType)) }; storyCollected = savedCollected ? parseInt(savedCollected) : 0; } else { storyGoal = generateRandomGoal(); storyCollected = 0; } updateGoalUI();
+            }
             function saveGameState() { 
                 localStorage.setItem('match3_board', JSON.stringify(board)); 
                 if (gameMode === "endless") localStorage.setItem('match3_score', score); 
                 localStorage.setItem('match3_mode', gameMode); localStorage.setItem('match3_coins', coins); 
-                if (gameMode === "story") saveStoryProgress(); localStorage.setItem('match3_field_type', document.getElementById('fieldTypeSelect').value); }
+                if (gameMode === "story") saveStoryProgress(); 
+                localStorage.setItem('match3_field_type', document.getElementById('fieldTypeSelect').value);
+                localStorage.setItem('player_nickname', playerNickname);
+                localStorage.setItem('player_gmail', playerGmail);
+                localStorage.setItem('player_level', playerLevel);
+                localStorage.setItem('player_exp', playerExp);
+            }
             function loadGameState() { 
+                // Загрузка данных персонажа
+                playerNickname = localStorage.getItem('player_nickname') || '';
+                playerGmail = localStorage.getItem('player_gmail') || '';
+                playerLevel = parseInt(localStorage.getItem('player_level') || '1');
+                playerExp = parseInt(localStorage.getItem('player_exp') || '0');
+                
                 const savedBoard = localStorage.getItem('match3_board'); 
                 const savedScore = localStorage.getItem('match3_score'); 
                 const savedMode = localStorage.getItem('match3_mode'); 
                 const savedCoins = localStorage.getItem('match3_coins'); 
                 const savedField = localStorage.getItem('match3_field_type'); 
-                if (savedField) { const select = document.getElementById('fieldTypeSelect'); 
-                if (select) select.value = savedField; setFieldType(savedField);
+                if (savedField) { 
+                    const select = document.getElementById('fieldTypeSelect'); 
+                if (select) select.value = savedField; 
+                setFieldType(savedField);
              } if (savedCoins !== null) coins = parseInt(savedCoins);
-              if (savedBoard) { board = JSON.parse(savedBoard);
+              if (savedBoard) { 
+                board = JSON.parse(savedBoard);
                  if (savedMode === "story") { gameMode = "story"; loadStoryProgress(); document.getElementById('scoreValue').innerText = `${storyCollected}/${storyGoal.count}`;
                   } else { gameMode = "endless";
                    if (savedScore) score = parseInt(savedScore);
                     document.getElementById('scoreValue').innerText = score;
                  } drawBoard(); updateCoinsUI();
                   return true;
-                 } return false; }
+                 } return false;
+            }
             function startGame(mode) {
                 gameMode = mode;
                 localMultiplayer = (mode === "local");
@@ -929,6 +1080,7 @@
                         document.getElementById('goalBox').style.display = "none";
                     }
                 }
+                updateProfileUI();
                 initBoard();
                 isProcessing = false;
                 drawBoard();
@@ -941,7 +1093,9 @@
                  tileSize = Math.floor(maxSize / Math.max(rows, cols)); 
                  canvas.width = cols * tileSize; 
                  canvas.height = rows * tileSize; 
-                 drawBoard(); }
+                 canvas.style.imageRendering = 'crisp-edges';
+                 drawBoard();
+            }
             window.addEventListener('resize', () => resizeCanvas());
 
             // ---- Функции матчинга и гравитации ----
@@ -1053,18 +1207,24 @@
                 animationFrame = requestAnimationFrame(update);
             }
             function drawTile(r,c,x,y,type,isHighlight=false) { 
+                ctx.imageSmoothingEnabled = false;
                 if (type === -1) { ctx.fillStyle = "#aa8866"; ctx.fillRect(x,y,tileSize-1,tileSize-1); return; } 
                 if (type === WALL_TYPE) { ctx.fillStyle = "#4a4a5a"; ctx.fillRect(x,y,tileSize-1,tileSize-1); ctx.fillStyle = "#2a2a3a"; for(let i=0;i<3;i++){ ctx.fillRect(x+tileSize*0.2+i*3,y+tileSize*0.3,tileSize*0.6,2); ctx.fillRect(x+tileSize*0.3,y+tileSize*0.2+i*3,2,tileSize*0.6); } return; } 
                 if (type === BOMB_TYPE) { 
-                    if (bombImage && bombImage.complete && bombImage.naturalWidth>0) ctx.drawImage(bombImage,x,y,tileSize,tileSize); 
-                    else { ctx.fillStyle="#666"; ctx.fillRect(x,y,tileSize-1,tileSize-1); ctx.fillStyle="#fff"; ctx.font=`${Math.floor(tileSize*0.6)}px "Segoe UI Emoji"`; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("💣",x+tileSize/2,y+tileSize/2); } 
+                    if (bombImage && bombImage.complete && bombImage.naturalWidth>0) {
+                        ctx.imageSmoothingEnabled = false;
+                        ctx.drawImage(bombImage,x,y,tileSize,tileSize);
+                    } else { ctx.fillStyle="#666"; ctx.fillRect(x,y,tileSize-1,tileSize-1); ctx.fillStyle="#fff"; ctx.font=`${Math.floor(tileSize*0.6)}px "Segoe UI Emoji"`; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("💣",x+tileSize/2,y+tileSize/2); } 
                 } else { 
-                    if (tileImages[type] && tileImages[type].complete && tileImages[type].naturalWidth>0) ctx.drawImage(tileImages[type],x,y,tileSize,tileSize); 
-                    else { ctx.fillStyle = defaultColors[type%defaultColors.length]; ctx.fillRect(x,y,tileSize-1,tileSize-1); ctx.fillStyle="#fff3e0"; ctx.font=`${Math.floor(tileSize*0.6)}px "Segoe UI Emoji"`; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(defaultEmojis[type%defaultEmojis.length],x+tileSize/2,y+tileSize/2); } 
+                    if (tileImages[type] && tileImages[type].complete && tileImages[type].naturalWidth>0) {
+                        ctx.imageSmoothingEnabled = false;
+                        ctx.drawImage(tileImages[type],x,y,tileSize,tileSize);
+                    } else { ctx.fillStyle = defaultColors[type%defaultColors.length]; ctx.fillRect(x,y,tileSize-1,tileSize-1); ctx.fillStyle="#fff3e0"; ctx.font=`${Math.floor(tileSize*0.6)}px "Segoe UI Emoji"`; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(defaultEmojis[type%defaultEmojis.length],x+tileSize/2,y+tileSize/2); } 
                 } 
                 ctx.strokeStyle = "#0ff"; ctx.lineWidth = 1.5; ctx.strokeRect(x,y,tileSize,tileSize); 
                 if (isHighlight) { ctx.save(); ctx.shadowBlur = 10; ctx.shadowColor = "#0ff"; ctx.strokeStyle = "#f0f"; ctx.lineWidth = 4; ctx.strokeRect(x+2,y+2,tileSize-5,tileSize-5); ctx.restore(); } 
             }
+                
             function drawBoard() { 
                 if (activeAnimations.swap) { 
                     ctx.clearRect(0,0,canvas.width,canvas.height); 
@@ -1116,10 +1276,42 @@
             function loadFpsSettings() { const savedLimit = localStorage.getItem('match3_fps_limit'); if (savedLimit !== null) fpsLimit = parseInt(savedLimit); else fpsLimit = 60; const savedShow = localStorage.getItem('match3_show_fps'); if (savedShow !== null) showFps = savedShow === 'true'; else showFps = false; document.getElementById('fpsLimitSelect').value = fpsLimit; document.getElementById('showFpsToggle').checked = showFps; setFpsLimit(fpsLimit); setShowFps(showFps); }
 
             // ---- Взаимодействие с мышью/тач ----
-            function getTileFromPoint(clientX,clientY) { const rect=canvas.getBoundingClientRect(); const scaleX=canvas.width/rect.width; const scaleY=canvas.height/rect.height; let canvasX=(clientX-rect.left)*scaleX; let canvasY=(clientY-rect.top)*scaleY; let col=Math.floor(canvasX/tileSize); let row=Math.floor(canvasY/tileSize); if(row>=0 && row<rows && col>=0 && col<cols) return {row,col}; return null; }
-            function onDragStart(e) { if(isProcessing) return; e.preventDefault(); let clientX,clientY; if(e.touches) { clientX=e.touches[0].clientX; clientY=e.touches[0].clientY; } else { clientX=e.clientX; clientY=e.clientY; } let tile=getTileFromPoint(clientX,clientY); if(!tile) return; if(board[tile.row][tile.col]===BOMB_TYPE) { explodeBomb(tile.row,tile.col); return; } if(isWall(tile.row,tile.col)) return; dragActive=true; dragStartRow=tile.row; dragStartCol=tile.col; dragTargetRow=tile.row; dragTargetCol=tile.col; drawBoard(); }
-            function onDragMove(e) { if(!dragActive) return; e.preventDefault(); let clientX,clientY; if(e.touches) { clientX=e.touches[0].clientX; clientY=e.touches[0].clientY; } else { clientX=e.clientX; clientY=e.clientY; } let tile=getTileFromPoint(clientX,clientY); if(tile) { dragTargetRow=tile.row; dragTargetCol=tile.col; } else { dragTargetRow=-1; dragTargetCol=-1; } drawBoard(); }
-            function onDragEnd(e) { if(!dragActive) return; e.preventDefault(); let clientX,clientY; if(e.changedTouches) { clientX=e.changedTouches[0].clientX; clientY=e.changedTouches[0].clientY; } else { clientX=e.clientX; clientY=e.clientY; } let tile=getTileFromPoint(clientX,clientY); if(tile && dragStartRow!==-1 && dragStartCol!==-1) { if(dragTargetRow===-1||dragTargetCol===-1) { dragTargetRow=tile.row; dragTargetCol=tile.col; } if(Math.abs(dragStartRow-dragTargetRow)+Math.abs(dragStartCol-dragTargetCol)===1) trySwap(dragStartRow,dragStartCol,dragTargetRow,dragTargetCol); } dragActive=false; dragStartRow=-1; dragStartCol=-1; dragTargetRow=-1; dragTargetCol=-1; drawBoard(); }
+            function getTileFromPoint(clientX,clientY) { 
+                const rect=canvas.getBoundingClientRect();
+                const scaleX=canvas.width/rect.width;
+                const scaleY=canvas.height/rect.height; 
+                let canvasX=(clientX-rect.left)*scaleX; 
+                let canvasY=(clientY-rect.top)*scaleY; 
+                let col=Math.floor(canvasX/tileSize); 
+                let row=Math.floor(canvasY/tileSize); 
+                if(row>=0 && row<rows && col>=0 && col<cols) return {row,col}; 
+                return null;
+            }
+            function onDragStart(e) { 
+                if(isProcessing) return; 
+                e.preventDefault(); 
+                let clientX,clientY; 
+                if(e.touches) { clientX=e.touches[0].clientX; clientY=e.touches[0].clientY; } 
+                else { clientX=e.clientX; clientY=e.clientY; } 
+                let tile=getTileFromPoint(clientX,clientY); 
+                if(!tile) return; if(board[tile.row][tile.col]===BOMB_TYPE) { 
+                    explodeBomb(tile.row,tile.col); return; } if(isWall(tile.row,tile.col)) return; dragActive=true; dragStartRow=tile.row; dragStartCol=tile.col; dragTargetRow=tile.row; dragTargetCol=tile.col; drawBoard();
+            }
+            function onDragMove(e) { if(!dragActive) return;
+                 e.preventDefault(); 
+                 let clientX,clientY; 
+                 if(e.touches) { clientX=e.touches[0].clientX; clientY=e.touches[0].clientY; } 
+                 else { clientX=e.clientX; clientY=e.clientY; } 
+                 let tile=getTileFromPoint(clientX,clientY); 
+                 if(tile) { dragTargetRow=tile.row; dragTargetCol=tile.col; } 
+                 else { dragTargetRow=-1; dragTargetCol=-1; } drawBoard();
+            }
+            function onDragEnd(e) { 
+                if(!dragActive) return; 
+                e.preventDefault(); 
+                let clientX,clientY; 
+                if(e.changedTouches) { clientX=e.changedTouches[0].clientX; clientY=e.changedTouches[0].clientY; } else { clientX=e.clientX; clientY=e.clientY; } let tile=getTileFromPoint(clientX,clientY); if(tile && dragStartRow!==-1 && dragStartCol!==-1) { if(dragTargetRow===-1||dragTargetCol===-1) { dragTargetRow=tile.row; dragTargetCol=tile.col; } if(Math.abs(dragStartRow-dragTargetRow)+Math.abs(dragStartCol-dragTargetCol)===1) trySwap(dragStartRow,dragStartCol,dragTargetRow,dragTargetCol); } dragActive=false; dragStartRow=-1; dragStartCol=-1; dragTargetRow=-1; dragTargetCol=-1; drawBoard();
+            }
             function explodeBomb(row,col) { if (board[row][col] !== BOMB_TYPE) return; isProcessing = true; if(sfxEnabled) playBombSound(); for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) if(!isWall(r,c)) board[r][c] = -1; if(gameMode==="endless" && !localMultiplayer) { score+=1000; document.getElementById('scoreValue').innerText=score; addCoins(1000); } else if (localMultiplayer) { addCoins(1000); } for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) if(!isWall(r,c)) board[r][c]=Math.floor(Math.random()*TYPES); clearMatchesAndRefill(); drawBoard(); isProcessing=false; saveGameState(); if (localMultiplayer) finishTurn(); }
             function finishTurn() { if (!localMultiplayer) return; if (!turnLock) { turnLock = true; switchPlayer(); setTimeout(() => { turnLock = false; }, 300); } }
             function trySwap(r1,c1,r2,c2) {
@@ -1223,6 +1415,7 @@
             const gameContainer = document.getElementById('gameContainer');
             const playBtn = document.getElementById('playBtn');
             const settingsBtn = document.getElementById('settingsBtn');
+            const profileBtn = document.getElementById('profileBtn');
             const endlessModeBtn = document.getElementById('endlessModeBtn');
             const storyModeBtn = document.getElementById('storyModeBtn');
             const localModeBtn = document.getElementById('localModeBtn');
@@ -1245,6 +1438,12 @@
             const fieldTypeSelect = document.getElementById('fieldTypeSelect');
             const fpsLimitSelect = document.getElementById('fpsLimitSelect');
             const showFpsToggle = document.getElementById('showFpsToggle');
+
+            if (profileBtn) {
+                profileBtn.addEventListener('click', () => {
+                    showProfileModal();
+                });
+            }
 
             customMusicInput.addEventListener('change', (e) => { if(e.target.files.length) { const url=URL.createObjectURL(e.target.files[0]); if(customMusicAudio) customMusicAudio.pause(); customMusicAudio=new Audio(url); customMusicAudio.loop=true; customMusicAudio.volume=musicVolume; if(musicEnabled) startMusic(); saveAudioSettings(); } });
             customMatchSoundInput.addEventListener('change', (e) => { if(e.target.files.length) { const url=URL.createObjectURL(e.target.files[0]); customMatchSoundAudio=new Audio(url); customMatchSoundAudio.volume=musicVolume; saveAudioSettings(); } });
@@ -1282,8 +1481,10 @@
             canvas.addEventListener('mousedown',onDragStart); window.addEventListener('mousemove',onDragMove); window.addEventListener('mouseup',onDragEnd); canvas.addEventListener('touchstart',onDragStart,{passive:false}); document.addEventListener('touchmove',onDragMove,{passive:false}); document.addEventListener('touchend',onDragEnd,{passive:false});
             mainMenu.style.display='flex'; gameContainer.classList.remove('visible');
             const resetProgressBtn = document.getElementById('resetProgressBtn');
-            if(resetProgressBtn) resetProgressBtn.addEventListener('click',()=>{ if(confirm('Сбросить всё?')) { const keys=['match3_board','match3_score','match3_mode','match3_story_goal_type','match3_story_goal_count','match3_story_goal_name','match3_story_collected','match3_images','match3_bomb_image','match3MusicEnabled','match3SfxEnabled','match3MusicVolume','match3CurrentMelody','match3CustomMusic','match3CustomMatchSound','match3_coins','match3_field_type','match3_fps_limit','match3_show_fps']; keys.forEach(k=>localStorage.removeItem(k)); location.reload(); } });
+            if(resetProgressBtn) resetProgressBtn.addEventListener('click',()=>{ if(confirm('Сбросить всё?')) { const keys=['match3_board','match3_score','match3_mode','match3_story_goal_type','match3_story_goal_count','match3_story_goal_name','match3_story_collected','match3_images','match3_bomb_image','match3MusicEnabled','match3SfxEnabled','match3MusicVolume','match3CurrentMelody','match3CustomMusic','match3CustomMatchSound','match3_coins','match3_field_type','match3_fps_limit','match3_show_fps','player_nickname','player_gmail','player_level','player_exp']; keys.forEach(k=>localStorage.removeItem(k)); location.reload(); } });
         })();
     </script>
+</body>
+</html>
 </body>
 </html>
