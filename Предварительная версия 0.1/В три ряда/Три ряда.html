@@ -1132,16 +1132,148 @@
                 } 
                 return { matchesSet, longMatches }; 
             }
-            function hasMatches() { const { matchesSet, longMatches } = getMatchesInfo(); return matchesSet.size > 0 || longMatches.length > 0; }
-            function clearMatchesWithoutScore() { while (true) { const { matchesSet, longMatches } = getMatchesInfo(); if (matchesSet.size === 0 && longMatches.length === 0) break; for (const coord of matchesSet) { let [r, c] = coord.split(',').map(Number); if (board[r][c] >= 0) board[r][c] = -1; } for (const lm of longMatches) { const { row, col, length, isHorizontal } = lm; if (isHorizontal) { for (let i = 0; i < length; i++) { const cc = col - Math.floor(length/2) + i; if (cc >= 0 && cc < cols && board[row][cc] >= 0) board[row][cc] = -1; } } else { for (let i = 0; i < length; i++) { const rr = row - Math.floor(length/2) + i; if (rr >= 0 && rr < rows && board[rr][col] >= 0) board[rr][col] = -1; } } } applyGravityAndRefill(); } }
-            function removeMatchesAndAddScore() { const { matchesSet, longMatches } = getMatchesInfo(); if (matchesSet.size === 0 && longMatches.length === 0) return 0; let removedCount = 0; let removedTypes = []; for (const lm of longMatches) { const { row, col, length } = lm; if (board[row][col] !== BOMB_TYPE) { board[row][col] = BOMB_TYPE; if (gameMode === "endless" && !localMultiplayer) { score += 100 * length; document.getElementById('scoreValue').innerText = score; addCoins(100 * length); } else if (localMultiplayer) { addCoins(100 * length); } if (sfxEnabled) playMatchSound(); } if (lm.isHorizontal) { for (let i = 0; i < length; i++) { const cc = col - Math.floor(length/2) + i; if (cc >= 0 && cc < cols && board[row][cc] !== BOMB_TYPE && board[row][cc] >= 0) { removedTypes.push(board[row][cc]); board[row][cc] = -1; removedCount++; } } } else { for (let i = 0; i < length; i++) { const rr = row - Math.floor(length/2) + i; if (rr >= 0 && rr < rows && board[rr][col] !== BOMB_TYPE && board[rr][col] >= 0) { removedTypes.push(board[rr][col]); board[rr][col] = -1; removedCount++; } } } } for (const coord of matchesSet) { let [r, c] = coord.split(',').map(Number); if (board[r][c] !== -1 && board[r][c] !== BOMB_TYPE) { removedTypes.push(board[r][c]); board[r][c] = -1; removedCount++; } } if (gameMode === "endless" && !localMultiplayer) { score += removedCount * 10; document.getElementById('scoreValue').innerText = score; addCoins(removedCount * 10); } else if (localMultiplayer) { addCoins(removedCount * 10); } else { countCollectedFromMatches(removedTypes); } if (sfxEnabled && removedCount > 0) playMatchSound(); return removedCount; }
-            function applyGravityAndRefill() { for (let c = 0; c < cols; c++) { let nonWallValues = []; for (let r = rows-1; r >= 0; r--) { if (!isWall(r, c) && board[r][c] !== -1) { nonWallValues.push(board[r][c]); } } let idx = 0; for (let r = rows-1; r >= 0; r--) { if (isWall(r, c)) continue; if (idx < nonWallValues.length) { board[r][c] = nonWallValues[idx]; idx++; } else { board[r][c] = Math.floor(Math.random() * TYPES); } } } }
-            function clearMatchesAndRefill() { let anyRemoved = false; while (true) { let removed = removeMatchesAndAddScore(); if (removed === 0) break; anyRemoved = true; applyGravityAndRefill(); } if (anyRemoved) drawBoard(); return anyRemoved; }
-            function hasValidMoves() { for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { if (board[r][c] === BOMB_TYPE || isWall(r,c)) continue; if (c+1 < cols && !isWall(r,c+1) && board[r][c+1] !== BOMB_TYPE) { swapCells(r,c,r,c+1); let has = hasMatches(); swapCells(r,c,r,c+1); if (has) return true; } if (r+1 < rows && !isWall(r+1,c) && board[r+1][c] !== BOMB_TYPE) { swapCells(r,c,r+1,c); let has = hasMatches(); swapCells(r,c,r+1,c); if (has) return true; } } return false; }
-            function swapCells(r1,c1,r2,c2) { let temp = board[r1][c1]; board[r1][c1] = board[r2][c2]; board[r2][c2] = temp; }
-            function shuffleBoard() { if (isProcessing) return; isProcessing = true; let attempts = 0, success = false; while (attempts < 50 && !success) { let newBoard = Array(rows).fill().map(()=>Array(cols).fill(0)); for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) newBoard[r][c] = Math.floor(Math.random()*TYPES); let oldBoard = board; board = newBoard; clearMatchesWithoutScore(); if (hasValidMoves()) success = true; else board = oldBoard; attempts++; } if (!success) { for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) if (board[r][c] !== BOMB_TYPE && !isWall(r,c)) board[r][c] = Math.floor(Math.random()*TYPES); else if (board[r][c] === BOMB_TYPE) board[r][c] = Math.floor(Math.random()*TYPES); clearMatchesAndRefill(); } drawBoard(); isProcessing = false; saveGameState(); }
-            function initBoard() { const fieldType = document.getElementById('fieldTypeSelect').value; const cfg = getFieldConfig(fieldType); rows = cfg.rows; cols = cfg.cols; board = Array(rows).fill().map(()=>Array(cols).fill(0)); for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) board[r][c] = Math.floor(Math.random()*TYPES); for (let w of cfg.walls) if (w[0] < rows && w[1] < cols) board[w[0]][w[1]] = WALL_TYPE; clearMatchesAndRefill(); }
-            function resetGame() { if(gameMode==="story") { storyGoal=generateRandomGoal(); storyCollected=0; updateGoalUI(); document.getElementById('scoreValue').innerText=`0/${storyGoal.count}`; } else if (localMultiplayer) { playerScores = [0,0]; currentPlayer=0; updateLocalUI(); } else { score=0; document.getElementById('scoreValue').innerText="0"; } if(!localMultiplayer) coins=0; updateCoinsUI(); initBoard(); isProcessing=false; drawBoard(); saveGameState(); }
+            function hasMatches() { 
+                const { matchesSet, longMatches } = getMatchesInfo(); 
+                return matchesSet.size > 0 || longMatches.length > 0; }
+            function clearMatchesWithoutScore() { while (true) { 
+                const { matchesSet, longMatches } = getMatchesInfo(); 
+                if (matchesSet.size === 0 && longMatches.length === 0) break; 
+                for (const coord of matchesSet) { 
+                    let [r, c] = coord.split(',').map(Number); 
+                    if (board[r][c] >= 0) board[r][c] = -1; } 
+                    for (const lm of longMatches) { 
+                        const { row, col, length, isHorizontal } = lm; 
+                        if (isHorizontal) { 
+                            for (let i = 0; i < length; i++) { 
+                                const cc = col - Math.floor(length/2) + i; 
+                                if (cc >= 0 && cc < cols && board[row][cc] >= 0) board[row][cc] = -1; } } 
+                                else { for (let i = 0; i < length; i++) { 
+                                    const rr = row - Math.floor(length/2) + i; 
+                                    if (rr >= 0 && rr < rows && board[rr][col] >= 0) board[rr][col] = -1;
+                                 } } } applyGravityAndRefill(); } }
+            function removeMatchesAndAddScore() { 
+                const { matchesSet, longMatches } = getMatchesInfo(); 
+                if (matchesSet.size === 0 && longMatches.length === 0) return 0; 
+                let removedCount = 0; 
+                let removedTypes = []; 
+                for (const lm of longMatches) { 
+                    const { row, col, length } = lm; 
+                    if (board[row][col] !== BOMB_TYPE) { board[row][col] = BOMB_TYPE; 
+                        if (gameMode === "endless" && !localMultiplayer) { score += 100 * length; 
+                            document.getElementById('scoreValue').innerText = score; 
+                            addCoins(100 * length); 
+                        } else if (localMultiplayer) { 
+                            addCoins(100 * length); } 
+                            if (sfxEnabled) playMatchSound(); 
+                        } if (lm.isHorizontal) { 
+                            for (let i = 0; i < length; i++) { 
+                                const cc = col - Math.floor(length/2) + i; 
+                                if (cc >= 0 && cc < cols && board[row][cc] !== BOMB_TYPE && board[row][cc] >= 0) { 
+                                    removedTypes.push(board[row][cc]); 
+                                    board[row][cc] = -1; 
+                                    removedCount++;
+                                 } } } else { 
+                                    for (let i = 0; i < length; i++) { 
+                                        const rr = row - Math.floor(length/2) + i; 
+                                        if (rr >= 0 && rr < rows && board[rr][col] !== BOMB_TYPE && board[rr][col] >= 0) { 
+                                            removedTypes.push(board[rr][col]); board[rr][col] = -1; removedCount++; } } } } 
+                                            for (const coord of matchesSet) { 
+                                                let [r, c] = coord.split(',').map(Number); 
+                                            if (board[r][c] !== -1 && board[r][c] !== BOMB_TYPE) { 
+                                                removedTypes.push(board[r][c]); board[r][c] = -1; 
+                                                removedCount++; } } if (gameMode === "endless" && !localMultiplayer) { 
+                                                    score += removedCount * 10; 
+                                                    document.getElementById('scoreValue').innerText = score; 
+                                                    addCoins(removedCount * 10); } 
+                                                    else if (localMultiplayer) { 
+                                                        addCoins(removedCount * 10); } 
+                                                        else { countCollectedFromMatches(removedTypes); } 
+                                                        if (sfxEnabled && removedCount > 0) playMatchSound(); 
+                                                        return removedCount; }
+            function applyGravityAndRefill() { 
+                for (let c = 0; c < cols; c++) { 
+                    let nonWallValues = []; for (
+                        let r = rows-1; r >= 0; r--) { 
+                            if (!isWall(r, c) && board[r][c] !== -1) { nonWallValues.push(board[r][c]); } } 
+                            let idx = 0; for (let r = rows-1; r >= 0; r--) { 
+                                if (isWall(r, c)) continue; 
+                                if (idx < nonWallValues.length) { board[r][c] = nonWallValues[idx]; idx++; 
+                            } else { board[r][c] = Math.floor(Math.random() * TYPES); } } } }
+            function clearMatchesAndRefill() { 
+                let anyRemoved = false; while (true) { 
+                    let removed = removeMatchesAndAddScore(); 
+                    if (removed === 0) break; anyRemoved = true; 
+                    applyGravityAndRefill(); } 
+                    if (anyRemoved) drawBoard(); 
+                    return anyRemoved; }
+            function hasValidMoves() { for (
+                let r = 0; r < rows; r++) for (
+                    let c = 0; c < cols; c++) { 
+                        if (board[r][c] === BOMB_TYPE || isWall(r,c)) continue; 
+                        if (c+1 < cols && !isWall(r,c+1) && board[r][c+1] !== BOMB_TYPE) { 
+                            swapCells(r,c,r,c+1); 
+                            let has = hasMatches(); 
+                            swapCells(r,c,r,c+1); 
+                            if (has) return true; } 
+                            if (r+1 < rows && !isWall(r+1,c) && board[r+1][c] !== BOMB_TYPE) { 
+                                swapCells(r,c,r+1,c); 
+                                let has = hasMatches(); 
+                                swapCells(r,c,r+1,c); 
+                                if (has) return true; 
+                            } } return false; }
+            function swapCells(r1,c1,r2,c2) { 
+                let temp = board[r1][c1];
+                 board[r1][c1] = board[r2][c2]; 
+                 board[r2][c2] = temp; }
+            function shuffleBoard() { 
+                if (isProcessing) return; 
+                isProcessing = true; 
+                let attempts = 0, success = false; 
+                while (attempts < 50 && !success) { 
+                    let newBoard = Array(rows).fill().map(()=>Array(cols).fill(0)); 
+                    for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) newBoard[r][c] = Math.floor(Math.random()*TYPES); 
+                    let oldBoard = board; 
+                    board = newBoard; 
+                    clearMatchesWithoutScore(); 
+                    if (hasValidMoves()) success = true; 
+                    else board = oldBoard; 
+                    attempts++; } 
+                    if (!success) { 
+                        for (let r=0;r<rows;r++) 
+                        for (let c=0;c<cols;c++) 
+                    if (board[r][c] !== BOMB_TYPE && !isWall(r,c)) board[r][c] = Math.floor(Math.random()*TYPES); 
+                    else if (board[r][c] === BOMB_TYPE) board[r][c] = Math.floor(Math.random()*TYPES); 
+                    clearMatchesAndRefill(); 
+                } drawBoard(); 
+                    isProcessing = false; 
+                    saveGameState(); }
+            function initBoard() { 
+                const fieldType = document.getElementById('fieldTypeSelect').value; 
+                const cfg = getFieldConfig(fieldType); 
+                rows = cfg.rows; 
+                cols = cfg.cols; 
+                board = Array(rows).fill().map(()=>Array(cols).fill(0)); 
+                for (let r=0;r<rows;r++) 
+                for (let c=0;c<cols;c++) 
+                board[r][c] = Math.floor(Math.random()*TYPES); 
+                for (let w of cfg.walls) 
+                if (w[0] < rows && w[1] < cols) board[w[0]][w[1]] = WALL_TYPE; 
+                clearMatchesAndRefill(); }
+            function resetGame() { 
+                if(gameMode==="story") { storyGoal=generateRandomGoal(); 
+                    storyCollected=0; 
+                    updateGoalUI(); 
+                    document.getElementById('scoreValue').innerText=`0/${storyGoal.count}`; 
+                } else if (localMultiplayer) { playerScores = [0,0]; currentPlayer=0; 
+                    updateLocalUI(); } 
+                    else { score=0; 
+                        document.getElementById('scoreValue').innerText="0"; } 
+                        if(!localMultiplayer) coins=0; 
+                        updateCoinsUI(); 
+                        initBoard(); 
+                        isProcessing=false; 
+                        drawBoard(); 
+                        saveGameState(); }
 
             // ---- Анимации с поддержкой FPS ----
             let activeAnimations = { swap: null, falling: [] };
@@ -1271,9 +1403,27 @@
                 startAnimationLoop(); 
                 drawBoard(); 
             }
-            function setFpsLimit(limit) { fpsLimit = limit; localStorage.setItem('match3_fps_limit', limit); }
-            function setShowFps(show) { showFps = show; localStorage.setItem('match3_show_fps', show); const fpsElem = document.getElementById('fpsCounter'); if (show) { fpsElem.classList.add('visible'); fpsFrameCount = 0; fpsLastTime = performance.now(); } else { fpsElem.classList.remove('visible'); } }
-            function loadFpsSettings() { const savedLimit = localStorage.getItem('match3_fps_limit'); if (savedLimit !== null) fpsLimit = parseInt(savedLimit); else fpsLimit = 60; const savedShow = localStorage.getItem('match3_show_fps'); if (savedShow !== null) showFps = savedShow === 'true'; else showFps = false; document.getElementById('fpsLimitSelect').value = fpsLimit; document.getElementById('showFpsToggle').checked = showFps; setFpsLimit(fpsLimit); setShowFps(showFps); }
+            function setFpsLimit(limit) { 
+                fpsLimit = limit; 
+                localStorage.setItem('match3_fps_limit', limit); }
+            function setShowFps(show) { 
+                showFps = show; 
+                localStorage.setItem('match3_show_fps', show); 
+                const fpsElem = document.getElementById('fpsCounter'); 
+                if (show) { fpsElem.classList.add('visible'); 
+                fpsFrameCount = 0; 
+                fpsLastTime = performance.now(); 
+            } else { fpsElem.classList.remove('visible'); } }
+            function loadFpsSettings() { 
+                const savedLimit = localStorage.getItem('match3_fps_limit'); 
+                if (savedLimit !== null) fpsLimit = parseInt(savedLimit); 
+                else fpsLimit = 60; 
+                const savedShow = localStorage.getItem('match3_show_fps'); 
+                if (savedShow !== null) showFps = savedShow === 'true'; 
+                else showFps = false; 
+                document.getElementById('fpsLimitSelect').value = fpsLimit; 
+                document.getElementById('showFpsToggle').checked = showFps; 
+                setFpsLimit(fpsLimit); setShowFps(showFps); }
 
             // ---- Взаимодействие с мышью/тач ----
             function getTileFromPoint(clientX,clientY) { 
@@ -1312,8 +1462,27 @@
                 let clientX,clientY; 
                 if(e.changedTouches) { clientX=e.changedTouches[0].clientX; clientY=e.changedTouches[0].clientY; } else { clientX=e.clientX; clientY=e.clientY; } let tile=getTileFromPoint(clientX,clientY); if(tile && dragStartRow!==-1 && dragStartCol!==-1) { if(dragTargetRow===-1||dragTargetCol===-1) { dragTargetRow=tile.row; dragTargetCol=tile.col; } if(Math.abs(dragStartRow-dragTargetRow)+Math.abs(dragStartCol-dragTargetCol)===1) trySwap(dragStartRow,dragStartCol,dragTargetRow,dragTargetCol); } dragActive=false; dragStartRow=-1; dragStartCol=-1; dragTargetRow=-1; dragTargetCol=-1; drawBoard();
             }
-            function explodeBomb(row,col) { if (board[row][col] !== BOMB_TYPE) return; isProcessing = true; if(sfxEnabled) playBombSound(); for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) if(!isWall(r,c)) board[r][c] = -1; if(gameMode==="endless" && !localMultiplayer) { score+=1000; document.getElementById('scoreValue').innerText=score; addCoins(1000); } else if (localMultiplayer) { addCoins(1000); } for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) if(!isWall(r,c)) board[r][c]=Math.floor(Math.random()*TYPES); clearMatchesAndRefill(); drawBoard(); isProcessing=false; saveGameState(); if (localMultiplayer) finishTurn(); }
-            function finishTurn() { if (!localMultiplayer) return; if (!turnLock) { turnLock = true; switchPlayer(); setTimeout(() => { turnLock = false; }, 300); } }
+            function explodeBomb(row,col) { 
+                if (board[row][col] !== BOMB_TYPE) return; 
+                isProcessing = true; if(sfxEnabled) playBombSound(); 
+                for(let r=0;r<rows;r++) 
+                for(let c=0;c<cols;c++) 
+            if(!isWall(r,c)) board[r][c] = -1; 
+            if(gameMode==="endless" && !localMultiplayer) { score+=1000; 
+                document.getElementById('scoreValue').innerText=score; 
+                addCoins(1000); } else if (localMultiplayer) { 
+                    addCoins(1000); } 
+                    for(let r=0;r<rows;r++) 
+                    for(let c=0;c<cols;c++) 
+                if(!isWall(r,c)) board[r][c]=Math.floor(Math.random()*TYPES); 
+                clearMatchesAndRefill(); drawBoard(); 
+                isProcessing=false; saveGameState(); 
+                if (localMultiplayer) finishTurn(); }
+            function finishTurn() { 
+                if (!localMultiplayer) return; 
+                if (!turnLock) { turnLock = true; 
+                    switchPlayer(); 
+                    setTimeout(() => { turnLock = false; }, 300); } }
             function trySwap(r1,c1,r2,c2) {
                 if (isProcessing) return false;
                 if (Math.abs(r1-r2)+Math.abs(c1-c2)!==1) return false;
@@ -1321,7 +1490,9 @@
                 isProcessing = true;
                 animateSwap(r1,c1,r2,c2,()=>{
                     if (hasMatches()) processMatchesAndCascade();
-                    else animateSwap(r2,c2,r1,c1,()=>{ isProcessing=false; drawBoard(); if (localMultiplayer) finishTurn(); });
+                    else animateSwap(r2,c2,r1,c1,()=>{ isProcessing=false; 
+                        drawBoard(); 
+                        if (localMultiplayer) finishTurn(); });
                 });
                 return true;
             }
@@ -1350,9 +1521,42 @@
             }
 
             // ---- Загрузка изображений ----
-            function saveImagesToLocalStorage() { let imagesData=[]; for(let i=0;i<TYPES;i++) { if(tileImages[i] && tileImages[i].src && tileImages[i].src.startsWith('data:')) imagesData.push(tileImages[i].src); else imagesData.push(null); } localStorage.setItem('match3_images', JSON.stringify(imagesData)); if(bombImage && bombImage.src && bombImage.src.startsWith('data:')) localStorage.setItem('match3_bomb_image', bombImage.src); else localStorage.removeItem('match3_bomb_image'); }
-            function loadImagesFromLocalStorage() { const savedImages = localStorage.getItem('match3_images'); if(savedImages) { const imagesData=JSON.parse(savedImages); for(let i=0;i<TYPES;i++) if(imagesData[i]) { const img=new Image(); img.src=imagesData[i]; tileImages[i]=img; } } const savedBomb = localStorage.getItem('match3_bomb_image'); if(savedBomb) { const bombImg=new Image(); bombImg.src=savedBomb; bombImage=bombImg; } }
-            function loadAssetsFromInputs() { for(let i=0;i<TYPES;i++) { const input=document.getElementById(`asset${i}`); if(input.files && input.files[0]) { const reader=new FileReader(); reader.onload=(e)=>{ const img=new Image(); img.src=e.target.result; tileImages[i]=img; drawBoard(); saveImagesToLocalStorage(); }; reader.readAsDataURL(input.files[0]); } } const bombInput=document.getElementById('bombAsset'); if(bombInput.files && bombInput.files[0]) { const reader=new FileReader(); reader.onload=(e)=>{ const img=new Image(); img.src=e.target.result; bombImage=img; drawBoard(); saveImagesToLocalStorage(); }; reader.readAsDataURL(bombInput.files[0]); } }
+            function saveImagesToLocalStorage() { 
+                let imagesData=[]; 
+                for(let i=0;i<TYPES;i++) { 
+                    if(tileImages[i] && tileImages[i].src && tileImages[i].src.startsWith('data:')) imagesData.push(tileImages[i].src); 
+                    else imagesData.push(null); } localStorage.setItem('match3_images', JSON.stringify(imagesData)); 
+                    if(bombImage && bombImage.src && bombImage.src.startsWith('data:')) localStorage.setItem('match3_bomb_image', bombImage.src); 
+                    else localStorage.removeItem('match3_bomb_image'); }
+            function loadImagesFromLocalStorage() { 
+                const savedImages = localStorage.getItem('match3_images'); 
+                if(savedImages) { const imagesData=JSON.parse(savedImages); 
+                    for(let i=0;i<TYPES;i++) if(imagesData[i]) { 
+                        const img=new Image(); img.src=imagesData[i]; 
+                        tileImages[i]=img; } } 
+                        const savedBomb = localStorage.getItem('match3_bomb_image'); 
+                        if(savedBomb) { 
+                            const bombImg=new Image(); bombImg.src=savedBomb; bombImage=bombImg; } }
+            function loadAssetsFromInputs() { 
+                for(let i=0;i<TYPES;i++) { 
+                    const input=document.getElementById(`asset${i}`); 
+                    if(input.files && input.files[0]) { 
+                        const reader=new FileReader(); 
+                        reader.onload=(e)=>{ 
+                            const img=new Image(); 
+                            img.src=e.target.result; 
+                            tileImages[i]=img; 
+                            drawBoard(); 
+                            saveImagesToLocalStorage(); }; 
+                            reader.readAsDataURL(input.files[0]); } } 
+                            const bombInput=document.getElementById('bombAsset'); 
+                            if(bombInput.files && bombInput.files[0]) { 
+                                const reader=new FileReader(); reader.onload=(e)=>{ 
+                                    const img=new Image(); 
+                                    img.src=e.target.result; 
+                                    bombImage=img; 
+                                    drawBoard(); 
+                                    saveImagesToLocalStorage(); }; reader.readAsDataURL(bombInput.files[0]); } }
 
             // ---------- AI АССИСТЕНТ ----------
             const aiModal = document.getElementById('aiModal');
@@ -1399,6 +1603,9 @@
                 if (q.includes('спорт') || q.includes('футбол')) return "⚽ Спорт — это здорово! А после тренировки можно расслабиться за матч-3.";
                 if (q.includes('путешеств') || q.includes('море')) return "✈️ Путешествия расширяют кругозор. А в игре можно путешествовать по разным типам полей!";
                 if (q.includes('здоров') || q.includes('сон') || q.includes('устал')) return "🛌 Здоровье превыше всего. Если устал — отдохни, игра никуда не убежит.";
+
+
+                // Функции для того что нет в базе
                 return "🤖 Я пока не знаю ответа. Спроси о чём-нибудь другом: о погоде, еде, кино, музыке, стратегии, правилах... Или просто спроси «как играть».";
             }
             function sendUserQuestion() { const text = aiInput.value.trim(); if (!text) return; addAIMessage(text, true); aiInput.value = ''; setTimeout(() => addAIMessage(getAIResponse(text)), 100); }
@@ -1445,43 +1652,104 @@
                 });
             }
 
-            customMusicInput.addEventListener('change', (e) => { if(e.target.files.length) { const url=URL.createObjectURL(e.target.files[0]); if(customMusicAudio) customMusicAudio.pause(); customMusicAudio=new Audio(url); customMusicAudio.loop=true; customMusicAudio.volume=musicVolume; if(musicEnabled) startMusic(); saveAudioSettings(); } });
-            customMatchSoundInput.addEventListener('change', (e) => { if(e.target.files.length) { const url=URL.createObjectURL(e.target.files[0]); customMatchSoundAudio=new Audio(url); customMatchSoundAudio.volume=musicVolume; saveAudioSettings(); } });
-            function showGameWithMode(mode) { if(!isAudioInit) initAudio(); modeSelectDiv.style.display='none'; mainMenu.style.display='none'; gameContainer.classList.add('visible'); resizeCanvas(); startGame(mode); }
+            customMusicInput.addEventListener('change', (e) => { 
+                if(e.target.files.length) { 
+                    const url=URL.createObjectURL(e.target.files[0]); 
+                    if(customMusicAudio) customMusicAudio.pause(); 
+                    customMusicAudio=new Audio(url); 
+                    customMusicAudio.loop=true; 
+                    customMusicAudio.volume=musicVolume; 
+                    if(musicEnabled) 
+                    startMusic(); 
+                saveAudioSettings(); } });
+            customMatchSoundInput.addEventListener('change', (e) => { 
+                if(e.target.files.length) { 
+                    const url=URL.createObjectURL(e.target.files[0]); 
+                    customMatchSoundAudio=new Audio(url); 
+                    customMatchSoundAudio.volume=musicVolume; 
+                    saveAudioSettings(); } });
+            function showGameWithMode(mode) { 
+                if(!isAudioInit) initAudio(); 
+                modeSelectDiv.style.display='none'; 
+                mainMenu.style.display='none'; 
+                gameContainer.classList.add('visible'); 
+                resizeCanvas(); 
+                startGame(mode); }
             playBtn.addEventListener('click',()=>{ modeSelectDiv.style.display='flex'; });
             endlessModeBtn.addEventListener('click',()=>showGameWithMode('endless'));
             storyModeBtn.addEventListener('click',()=>showGameWithMode('story'));
             localModeBtn.addEventListener('click',()=>showGameWithMode('local'));
             cancelModeBtn.addEventListener('click',()=>{ modeSelectDiv.style.display='none'; });
-            menuReturnBtn.addEventListener('click',()=>{ gameContainer.classList.remove('visible'); mainMenu.style.display='flex'; modeSelectDiv.style.display='none'; if(musicEnabled && audioCtx) { stopMusic(); startMusic(); } });
-            shopBtn.addEventListener('click',()=>{ if(gameContainer.classList.contains('visible') && !localMultiplayer) { updateCoinsUI(); shopModal.style.display='flex'; } });
+            menuReturnBtn.addEventListener('click',()=>{ gameContainer.classList.remove('visible'); 
+            mainMenu.style.display='flex'; modeSelectDiv.style.display='none'; 
+            if(musicEnabled && audioCtx) { stopMusic(); startMusic(); } });
+            shopBtn.addEventListener('click',()=>{ 
+                if(gameContainer.classList.contains('visible') && !localMultiplayer) { updateCoinsUI(); 
+                    shopModal.style.display='flex'; } });
             closeShopBtn.addEventListener('click',()=>shopModal.style.display='none');
-            buyBombBtn.addEventListener('click',()=>{ if(!localMultiplayer) buyBomb(); shopModal.style.display='none'; });
-            buyShuffleBtn.addEventListener('click',()=>{ if(!localMultiplayer) buyShuffle(); shopModal.style.display='none'; });
-            buyHintBtn.addEventListener('click',()=>{ if(!localMultiplayer) buyHint(); shopModal.style.display='none'; });
-            settingsBtn.addEventListener('click',()=>{ if(!isAudioInit) initAudio(); settingsModal.style.display='flex'; });
-            gameSettingsBtn.addEventListener('click',()=>{ if(!isAudioInit) initAudio(); settingsModal.style.display='flex'; });
+            buyBombBtn.addEventListener('click',()=>{ 
+                if(!localMultiplayer) buyBomb(); 
+                shopModal.style.display='none'; });
+            buyShuffleBtn.addEventListener('click',()=>{ 
+                if(!localMultiplayer) buyShuffle(); 
+                shopModal.style.display='none'; });
+            buyHintBtn.addEventListener('click',()=>{ 
+                if(!localMultiplayer) buyHint(); 
+                shopModal.style.display='none'; });
+            settingsBtn.addEventListener('click',()=>{ 
+                if(!isAudioInit) initAudio(); 
+                settingsModal.style.display='flex'; });
+            gameSettingsBtn.addEventListener('click',()=>{ 
+                if(!isAudioInit) initAudio(); 
+                settingsModal.style.display='flex'; });
             closeSettingsBtn.addEventListener('click',()=>settingsModal.style.display='none');
-            settingsModal.addEventListener('click',(e)=>{ if(e.target===settingsModal) settingsModal.style.display='none'; });
-            shopModal.addEventListener('click',(e)=>{ if(e.target===shopModal) shopModal.style.display='none'; });
+            settingsModal.addEventListener('click',(e)=>{ 
+                if(e.target===settingsModal) settingsModal.style.display='none'; });
+            shopModal.addEventListener('click',(e)=>{ 
+                if(e.target===shopModal) shopModal.style.display='none'; });
             musicToggle.addEventListener('change',(e)=>setMusicEnabled(e.target.checked));
             sfxToggle.addEventListener('change',(e)=>setSfxEnabled(e.target.checked));
             volumeSlider.addEventListener('input',(e)=>setMusicVolume(e.target.value/100));
-            fieldTypeSelect.addEventListener('change',(e)=>{ if(confirm('Смена поля сбросит игру?')) { setFieldType(e.target.value); resetGame(); } else fieldTypeSelect.value=localStorage.getItem('match3_field_type')||'classic'; });
-            fpsLimitSelect.addEventListener('change', (e) => { setFpsLimit(parseInt(e.target.value)); });
-            showFpsToggle.addEventListener('change', (e) => { setShowFps(e.target.checked); });
-            loadAudioSettings(); setMusicVolume(musicVolume); setMusicEnabled(musicEnabled); setSfxEnabled(sfxEnabled);
+            fieldTypeSelect.addEventListener('change',(e)=>{ 
+                if(confirm('Смена поля сбросит игру?')) { 
+                    setFieldType(e.target.value); 
+                    resetGame(); 
+                } else fieldTypeSelect.value=localStorage.getItem('match3_field_type')||'classic'; });
+            fpsLimitSelect.addEventListener('change', (e) => { 
+                setFpsLimit(parseInt(e.target.value)); });
+            showFpsToggle.addEventListener('change', (e) => { 
+                setShowFps(e.target.checked); });
+            loadAudioSettings(); setMusicVolume(musicVolume); 
+            setMusicEnabled(musicEnabled); setSfxEnabled(sfxEnabled);
             loadFpsSettings();
-            function enableAudioOnUserInteraction() { initAudio(); document.removeEventListener('click',enableAudioOnUserInteraction); document.removeEventListener('touchstart',enableAudioOnUserInteraction); }
-            document.addEventListener('click',enableAudioOnUserInteraction); document.addEventListener('touchstart',enableAudioOnUserInteraction);
-            for(let i=0;i<TYPES;i++) { const input=document.getElementById(`asset${i}`); if(input) input.addEventListener('change',loadAssetsFromInputs); }
-            const bombInputAsset=document.getElementById('bombAsset'); if(bombInputAsset) bombInputAsset.addEventListener('change',loadAssetsFromInputs);
+            function enableAudioOnUserInteraction() { 
+                initAudio(); 
+                document.removeEventListener('click',enableAudioOnUserInteraction); 
+                document.removeEventListener('touchstart',enableAudioOnUserInteraction); }
+            document.addEventListener('click',enableAudioOnUserInteraction); 
+            document.addEventListener('touchstart',enableAudioOnUserInteraction);
+            for(let i=0;i<TYPES;i++) { 
+                const input=document.getElementById(`asset${i}`); 
+                if(input) input.addEventListener('change',loadAssetsFromInputs); }
+            const bombInputAsset=document.getElementById('bombAsset'); 
+            if(bombInputAsset) bombInputAsset.addEventListener('change',loadAssetsFromInputs);
             loadImagesFromLocalStorage();
-            if(!loadGameState()) { initBoard(); drawBoard(); } else { gameContainer.classList.add('visible'); mainMenu.style.display='none'; resizeCanvas(); drawBoard(); }
-            canvas.addEventListener('mousedown',onDragStart); window.addEventListener('mousemove',onDragMove); window.addEventListener('mouseup',onDragEnd); canvas.addEventListener('touchstart',onDragStart,{passive:false}); document.addEventListener('touchmove',onDragMove,{passive:false}); document.addEventListener('touchend',onDragEnd,{passive:false});
+            if(!loadGameState()) { initBoard(); 
+                drawBoard(); } 
+                else { gameContainer.classList.add('visible'); 
+                mainMenu.style.display='none'; 
+                resizeCanvas(); 
+                drawBoard(); }
+            canvas.addEventListener('mousedown',onDragStart); 
+            window.addEventListener('mousemove',onDragMove); 
+            window.addEventListener('mouseup',onDragEnd); 
+            canvas.addEventListener('touchstart',onDragStart,{passive:false}); 
+            document.addEventListener('touchmove',onDragMove,{passive:false}); 
+            document.addEventListener('touchend',onDragEnd,{passive:false});
             mainMenu.style.display='flex'; gameContainer.classList.remove('visible');
             const resetProgressBtn = document.getElementById('resetProgressBtn');
-            if(resetProgressBtn) resetProgressBtn.addEventListener('click',()=>{ if(confirm('Сбросить всё?')) { const keys=['match3_board','match3_score','match3_mode','match3_story_goal_type','match3_story_goal_count','match3_story_goal_name','match3_story_collected','match3_images','match3_bomb_image','match3MusicEnabled','match3SfxEnabled','match3MusicVolume','match3CurrentMelody','match3CustomMusic','match3CustomMatchSound','match3_coins','match3_field_type','match3_fps_limit','match3_show_fps','player_nickname','player_gmail','player_level','player_exp']; keys.forEach(k=>localStorage.removeItem(k)); location.reload(); } });
+            if(resetProgressBtn) resetProgressBtn.addEventListener('click',()=>{ if(confirm('Сбросить всё?')) { 
+                const keys=['match3_board','match3_score','match3_mode','match3_story_goal_type','match3_story_goal_count','match3_story_goal_name','match3_story_collected','match3_images','match3_bomb_image','match3MusicEnabled','match3SfxEnabled','match3MusicVolume','match3CurrentMelody','match3CustomMusic','match3CustomMatchSound','match3_coins','match3_field_type','match3_fps_limit','match3_show_fps','player_nickname','player_gmail','player_level','player_exp']; keys.forEach(k=>localStorage.removeItem(k)); location.reload(); } });
         })();
     </script>
 </body>
